@@ -1,0 +1,22 @@
+2024-10-28 13:57:27,157 - config.log_config - ERROR - Database connection error: Textual SQL expression 'SELECT 1' should be explicitly declared as text('SELECT 1')
+2024-10-28 13:59:37,861 - config.log_config - ERROR - Database connection error: Textual SQL expression 'SELECT 1' should be explicitly declared as text('SELECT 1')
+2024-10-28 14:00:23,548 - config.log_config - ERROR - Database connection error: Textual SQL expression 'SELECT 1' should be explicitly declared as text('SELECT 1')
+2024-10-28 14:03:20,898 - config.log_config - ERROR - Database connection error: Textual SQL expression 'SELECT 1' should be explicitly declared as text('SELECT 1')
+2024-10-29 14:37:31,723 - config.log_config - ERROR - Error creating superuser: 'str' object has no attribute 'begin'
+2024-10-29 14:48:02,594 - config.log_config - ERROR - Error creating superuser: 'str' object has no attribute 'begin'
+2024-10-29 14:50:10,006 - config.log_config - ERROR - Error creating superuser: 'username' is an invalid keyword argument for Admin
+2024-10-29 14:51:03,888 - config.log_config - ERROR - Error creating superuser: 'hash_password' is an invalid keyword argument for Admin
+2024-10-29 14:51:28,855 - config.log_config - ERROR - Error creating superuser: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.DataError'>: invalid input for query argument $4: '100000' ('str' object cannot be interpreted as an integer)
+[SQL: INSERT INTO "SuperAdmin" (admin_name, email, password, max_hits, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::INTEGER, $5::TIMESTAMP WITHOUT TIME ZONE, $6::TIMESTAMP WITHOUT TIME ZONE) RETURNING "SuperAdmin".admin_id]
+[parameters: ('superuser', 'superuser@netsmartz.net', '$2b$12$5pvCo8vQk0DJxL3yHpfaouSMrldbZU18DPGNSkOqu6ymSifmJCHV.', '100000', None, None)]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)
+2024-10-29 14:53:04,804 - config.log_config - ERROR - Error creating superuser: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.DataError'>: invalid input for query argument $4: '100000' ('str' object cannot be interpreted as an integer)
+[SQL: INSERT INTO "SuperAdmin" (admin_name, email, password, max_hits, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::INTEGER, $5::TIMESTAMP WITHOUT TIME ZONE, $6::TIMESTAMP WITHOUT TIME ZONE) RETURNING "SuperAdmin".admin_id]
+[parameters: ('superuser', 'superuser@netsmartz.net', '$2b$12$MWxVDWYlJyJl3ewvxH2qs.8mUQAuIo3te/fELu4XF7YaKZn5lXfxO', '100000', None, None)]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)
+2024-10-29 14:54:17,537 - config.log_config - INFO - Superuser 'superuser' created successfully!
+2024-10-30 11:25:05,601 - config.log_config - ERROR - Error creating superuser: relationship 'admin' expects a class or a mapper argument (received: <class 'sqlalchemy.sql.schema.Table'>)
+2024-10-30 11:28:13,682 - config.log_config - ERROR - Error creating superuser: Mapper 'Mapper[Organisation(organisations)]' has no property 'SuperAdmin'.  If this property was indicated from other mappers or configure events, ensure registry.configure() has been called.
+2024-10-30 11:30:28,796 - config.log_config - ERROR - Error creating superuser: Mapper 'Mapper[Organisation(organisations)]' has no property 'SuperAdmin'.  If this property was indicated from other mappers or configure events, ensure registry.configure() has been called.
+2024-10-30 11:34:27,263 - config.log_config - ERROR - Error creating superuser: Mapper 'Mapper[Organisation(organisations)]' has no property 'SuperAdmin'.  If this property was indicated from other mappers or configure events, ensure registry.configure() has been called.
+2024-10-30 11:37:54,322 - config.log_config - INFO - Superuser 'superuser' created successfully!

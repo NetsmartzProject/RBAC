@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "multitenancy-fastapi"
+version = "0.1.0"
+description = "This is a Multi Tenant Architecture For all SAAS using FastAPI framework."
+authors = ["Abhinandan Kumar <abhinandan.kumar@netsmartz.net>"]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+fastapi = "^0.113.0"
+sqlalchemy = "^2.0.34"
+python-jose = "^3.3.0"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+uvicorn = "^0.30.6"
+alembic = "^1.13.2"
+pydantic-settings = "^2.5.2"
+asyncpg = "^0.29.0"
+python-multipart = "^0.0.9"
+pydantic = {extras = ["email"], version = "^2.9.1"}
+ 
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
