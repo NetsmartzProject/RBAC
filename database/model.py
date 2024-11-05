@@ -41,7 +41,7 @@ class Admin(Base):
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     max_hits = Column(Integer, nullable=True)
-    created_at = Column(DateTime, nullable=True, default=None)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, nullable=True, default=None)
 
     organisations = relationship("Organisation", back_populates="admin")
@@ -50,8 +50,8 @@ class Admin(Base):
 class Organisation(Base):
     __tablename__ = "organisations"
 
-    org_id = Column(Integer, primary_key=True)
-    org_name = Column(String(255), nullable=False)
+    org_id = Column(Integer, primary_key=True, autoincrement=True)
+    org_name = Column(String(255),unique=True, nullable=False)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     total_hits_limit = Column(Integer, nullable=False)
@@ -60,7 +60,7 @@ class Organisation(Base):
         Integer, ForeignKey("SuperAdmin.admin_id"), nullable=False
     )
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=func.now(), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, onupdate=func.now())
 
     # Relationships
@@ -88,7 +88,7 @@ class SubOrganisation(Base):
     allocated_hits = Column(Integer, nullable=False)
     remaining_hits = Column(Integer, nullable=False)
     used_hits = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=func.now(), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, onupdate=func.now())
 
     # Relationships
@@ -113,7 +113,7 @@ class HitAllocationRule(Base):
     )
     allocation_percentage = Column(Float, nullable=False)
     max_hits = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=func.now(), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, onupdate=func.now())
 
     organisation = relationship("Organisation", back_populates="hit_allocation_rules")
@@ -140,7 +140,10 @@ class User(Base):
     password = Column(String(255), nullable=False)
     role = Column(Enum(Role), nullable=False)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=func.now(), nullable=False)
+    allocated_hits = Column(Integer, nullable=True,default=0)
+    remaninig_hits=Column(Integer,nullable=True,default=0)
+
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, onupdate=func.now())
 
     sub_organisation = relationship("SubOrganisation", back_populates="users")

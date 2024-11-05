@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     superuser_username:str
     superuser_email:str
     max_hits:int
+    secret_key:str
+    algorithm:str
+    access_token_expire_minutes:int
+    
+    
 
     
     class Config:

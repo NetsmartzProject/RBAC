@@ -20,3 +20,8 @@
 2024-10-30 11:30:28,796 - config.log_config - ERROR - Error creating superuser: Mapper 'Mapper[Organisation(organisations)]' has no property 'SuperAdmin'.  If this property was indicated from other mappers or configure events, ensure registry.configure() has been called.
 2024-10-30 11:34:27,263 - config.log_config - ERROR - Error creating superuser: Mapper 'Mapper[Organisation(organisations)]' has no property 'SuperAdmin'.  If this property was indicated from other mappers or configure events, ensure registry.configure() has been called.
 2024-10-30 11:37:54,322 - config.log_config - INFO - Superuser 'superuser' created successfully!
+2024-10-31 13:53:21,678 - config.log_config - INFO - Superuser 'superuser' created successfully!
+2024-10-31 14:19:28,251 - config.log_config - ERROR - Error in login: tuple indices must be integers or slices, not str
+2024-10-31 14:20:34,215 - config.log_config - ERROR - Error in login: tuple indices must be integers or slices, not str
+2024-10-31 14:21:21,868 - config.log_config - ERROR - Error in login: tuple indices must be integers or slices, not str
+2024-10-31 14:55:56,108 - config.log_config - ERROR - Error in login: tuple indices must be integers or slices, not str
