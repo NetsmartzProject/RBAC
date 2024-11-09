@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     max_hits:int
     secret_key:str
     algorithm:str
+    admin_id:int 
     access_token_expire_minutes:int
     
     
