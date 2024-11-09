@@ -8,7 +8,7 @@ from datetime import datetime
 
 
 async def create_superuser(
-   admin_id:str ,admin_name: str, email: str, password: str, max_hits: int, db: AsyncSession
+   admin_id:str ,admin_name: str, username:str, email: str, password: str, max_hits: int, db: AsyncSession
 ):
     try:
         async with db.begin():
@@ -16,6 +16,7 @@ async def create_superuser(
             new_superuser = model.Admin(
                 admin_id=admin_id,
                 admin_name=admin_name,
+                username=username,
                 email=email,
                 password=hashed_password,
                 max_hits=max_hits,
@@ -38,9 +39,10 @@ async def main():
     email = settings.superuser_email
     password = settings.superuser_password
     max_hits = settings.max_hits
+    username= settings.username
 
     async for db in database.get_db():
-        await create_superuser(admin_id,admin_name, email, password, max_hits, db)
+        await create_superuser(admin_id,admin_name,username, email, password, max_hits, db)
 
 
 if __name__ == "__main__":

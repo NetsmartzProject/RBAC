@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     algorithm:str
     admin_id:int 
     access_token_expire_minutes:int
-    
+    username:str
     
 
     

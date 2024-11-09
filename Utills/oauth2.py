@@ -17,6 +17,8 @@ from fastapi import Request, HTTPException
 from Schema.auth_schema import OrganisationBase,OrganisationResponse,UserResponse,SubOrganisationBase,SuborganisationResponse,UserBase,CommonBase
 from database.model import Organisation,SubOrganisation,User,Admin
 from Utills import oauth2
+from config.log_config import logger
+
 
 oauth2_scheme = HTTPBearer()
 pwd_context = CryptContext(schemes=["bcrypt"],deprecated = "auto")
@@ -144,11 +146,12 @@ async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSess
         
         total_hits_limit=current_user.max_hits
         available_hits=(org.total_hits_limit - (org.total_hits_limit * 0.10))
-        print(org, created_by_admin_id, "this is the organozation from service")
+        print(org, created_by_admin_id, "this is the organozation from service",org.username)
         new_org = Organisation(
         email=org.org_email,
         password=hashed_password,
         org_name=org.org_name,
+        username=org.username,
         total_hits_limit=org.total_hits_limit,
         available_hits=available_hits,
         created_by_admin = created_by_admin_id
@@ -171,6 +174,7 @@ async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSess
             password=hashed_password,
             allocated_hits=ten_percent_of_max_hit,  
             remaining_hits=0,
+            username=org.username,
             # remaining_hits=org.available_hits,
             used_hits=0
         )
@@ -186,6 +190,7 @@ async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSess
             created_by_admin=new_org.created_by_admin,
             org_name=new_org.org_name,
             org_email=new_org.email,
+            username=org.username,
             total_hits_limit=org.total_hits_limit
     )
     
@@ -217,6 +222,7 @@ async def suborganization(suborg: SubOrganisationBase, current_user: tuple, db: 
         new_sub_org = SubOrganisation(
             sub_org_name=suborg.sub_org_name,
             email=suborg.sub_org_email,
+            username=suborg.username,
             password=hashed_password,
             allocated_hits=suborg.allocated_hits,
             remaining_hits=suborg.allocated_hits,
@@ -232,6 +238,7 @@ async def suborganization(suborg: SubOrganisationBase, current_user: tuple, db: 
         return SuborganisationResponse(
             sub_org_name=suborg.sub_org_name,
             sub_org_email=suborg.sub_org_email,
+            username=suborg.username,
             allocated_hits=suborg.allocated_hits,
             created_by_org_id=new_sub_org.sub_org_id
         )  
@@ -267,8 +274,9 @@ async def user(userbase: UserBase, current_user: tuple, db: AsyncSession):
         current_sub_org.allocated_hits -= userbase.allocated_hits
         await db.commit()  
         new_user = User(
-            username=userbase.username,
+            name=userbase.name,
             email=userbase.email,
+            username=userbase.username,
             password=hashed_password,
             sub_org_id=sub_org_id,
             allocated_hits=userbase.allocated_hits,
@@ -279,9 +287,11 @@ async def user(userbase: UserBase, current_user: tuple, db: AsyncSession):
         await db.commit()
         await db.refresh(new_user)
 
+        print(userbase.username,"hii")
         return UserResponse(
-            name=userbase.username,
+            name=userbase.name,
             email=userbase.email,
+            username=userbase.username,
             allocated_hits=userbase.allocated_hits,
         )  
 
@@ -289,3 +299,7 @@ async def user(userbase: UserBase, current_user: tuple, db: AsyncSession):
         await db.rollback()
         print(f"Error creating user: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
+
+
+
+

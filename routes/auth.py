@@ -90,7 +90,7 @@ async def create(
     await check_duplicate_email(db, user.email)
     print(user1.role ,"usrerrolesssssss")
     if user1.role == 'superadmin':
-        org = OrganisationBase(org_email=user.email, org_password=user.password, org_name=user.name, total_hits_limit=user.total_hits, parent_sub_org_name="" )
+        org = OrganisationBase(org_email=user.email, org_password=user.password, org_name=user.name, total_hits_limit=user.total_hits, parent_sub_org_name="" ,username=user.username)
         return await create_organization(org, db, current_user)
     
     elif user1.role == 'org' :
@@ -98,6 +98,7 @@ async def create(
             sub_org_email=user.email,
             sub_org_password=user.password,
             sub_org_name=user.name,
+            username=user.username,
             allocated_hits=user.total_hits,
             remaining_hits=user.total_hits,
             used_hits=user.total_hits
@@ -106,8 +107,9 @@ async def create(
     
     elif user1.role =='sub_org':
          org = UserBase(
-            username=user.name,
+            name=user.name,
             email=user.email,
+            username=user.username,
             password=user.password,
             allocated_hits=user.total_hits    
          )

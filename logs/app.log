@@ -83,3 +83,29 @@ DETAIL:  Key (email)=(superuser@netsmartz.net) already exists.
 2024-11-09 02:21:08,954 - config.log_config - INFO - User email: superuser@netsmartz.net, Role: superadmin
 2024-11-09 02:23:26,540 - config.log_config - INFO - User email: user@example.com, Role: org
 2024-11-09 02:35:47,261 - config.log_config - INFO - User email: user183@example.com, Role: sub_org
+2024-11-09 16:23:24,524 - config.log_config - INFO - User email: user1013@example.com, Role: user
+2024-11-09 16:26:19,751 - config.log_config - INFO - User email: user183@example.com, Role: sub_org
+2024-11-09 16:31:14,465 - config.log_config - INFO - User role: sub_org
+2024-11-09 16:31:58,095 - config.log_config - INFO - User role: sub_org
+2024-11-09 16:35:11,411 - config.log_config - INFO - User role: sub_org
+2024-11-09 16:35:49,250 - config.log_config - INFO - User role: sub_org
+2024-11-09 16:37:23,636 - config.log_config - INFO - User role: user
+2024-11-09 16:38:14,033 - config.log_config - INFO - User role: user
+2024-11-09 16:39:35,260 - config.log_config - INFO - User role: org
+2024-11-09 16:41:07,486 - config.log_config - INFO - User role: org
+2024-11-09 16:43:10,769 - config.log_config - INFO - User role: superadmin
+2024-11-09 16:44:09,844 - config.log_config - INFO - User role: superadmin
+2024-11-09 16:44:21,122 - config.log_config - INFO - User role: superadmin
+2024-11-09 16:44:39,683 - config.log_config - INFO - User role: superadmin
+2024-11-09 16:45:56,753 - config.log_config - INFO - User role: superadmin
+2024-11-09 17:01:52,147 - config.log_config - ERROR - Unexpected error: 'coroutine' object has no attribute 'scalars'
+2024-11-09 17:04:40,944 - config.log_config - ERROR - Unexpected error: 'User' object has no attribute 'id'
+2024-11-09 17:08:39,376 - config.log_config - INFO - User role: superadmin
+2024-11-09 17:39:06,836 - config.log_config - INFO - Superuser 'superuser' created successfully!
+2024-11-09 17:43:54,219 - config.log_config - ERROR - Error creating superuser: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "SuperAdmin_pkey"
+DETAIL:  Key (admin_id)=(1) already exists.
+[SQL: INSERT INTO "SuperAdmin" (admin_id, admin_name, username, email, password, max_hits, created_at, updated_at) VALUES ($1::INTEGER, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::INTEGER, $7::TIMESTAMP WITH TIME ZONE, $8::TIMESTAMP WITHOUT TIME ZONE)]
+[parameters: (1, 'superuser', 'vicky kumar', 'superuser@netsmartz.net', '$2b$12$F7t2mlW/W2eQP7UewspnHu5IlEgxT/hkvpcRaTXIw9M5kVd9sey2.', 100000, datetime.datetime(2024, 11, 9, 17, 43, 54, 48245), datetime.datetime(2024, 11, 9, 17, 43, 54, 48245))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2024-11-09 17:49:15,765 - config.log_config - INFO - Superuser 'superuser1' created successfully!
+2024-11-09 18:05:53,234 - config.log_config - INFO - User role: superadmin

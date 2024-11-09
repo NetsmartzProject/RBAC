@@ -37,7 +37,8 @@ class Admin(Base):
     __tablename__ = "SuperAdmin"
 
     admin_id = Column(Integer, primary_key=True, index=True)
-    admin_name = Column(String, nullable=False,unique=True)
+    admin_name = Column(String(255), nullable=False)
+    username = Column(String, nullable=False,unique=True)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     max_hits = Column(Integer, nullable=True)
@@ -51,7 +52,7 @@ class Organisation(Base):
     __tablename__ = "organisations"
 
     org_id = Column(Integer, primary_key=True, autoincrement=True)
-    # org_user_name = Column(String, nullable=False,unique=True)
+    username = Column(String, nullable=False,unique=True)
     org_name = Column(String(255), nullable=False)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
@@ -82,7 +83,7 @@ class SubOrganisation(Base):
 
     sub_org_id = Column(Integer, primary_key=True)
     org_id = Column(Integer, ForeignKey("organisations.org_id"), nullable=False)
-    # sub_org_user_name = Column(String, nullable=False,unique=True)
+    username = Column(String, nullable=False,unique=True)
     sub_org_name = Column(String(255), nullable=False)
     is_parent = Column(Boolean, default=False)
     email = Column(String, unique=True, nullable=False)
@@ -138,7 +139,7 @@ class User(Base):
         Integer, ForeignKey("sub_organisations.sub_org_id"), nullable=False
     )
     username = Column(String, nullable=False,unique=True)
-    # name = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
     role = Column(Enum(Role), nullable=False)
