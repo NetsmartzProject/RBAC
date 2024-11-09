@@ -25,3 +25,61 @@
 2024-10-31 14:20:34,215 - config.log_config - ERROR - Error in login: tuple indices must be integers or slices, not str
 2024-10-31 14:21:21,868 - config.log_config - ERROR - Error in login: tuple indices must be integers or slices, not str
 2024-10-31 14:55:56,108 - config.log_config - ERROR - Error in login: tuple indices must be integers or slices, not str
+2024-11-07 22:47:51,625 - config.log_config - INFO - User email: abhinand@example.com, Role: user
+2024-11-08 11:43:39,016 - config.log_config - INFO - User email: superuser@netsmartz.net, Role: superadmin
+2024-11-08 12:11:40,405 - config.log_config - INFO - User email: googke@example.com, Role: org
+2024-11-08 12:19:53,739 - config.log_config - INFO - User email: googke1@example.com, Role: sub_org
+2024-11-08 12:55:37,011 - config.log_config - ERROR - Error creating superuser: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.NotNullViolationError'>: null value in column "user_name" of relation "SuperAdmin" violates not-null constraint
+DETAIL:  Failing row contains (2, superuser, superuser@netsmartz.net, $2b$12$KWK9YipRwYkTj6c/gJx4JeHNVyy6jN6/1i3cH2bqs8LPuXKeO6RwW, 100000, 2024-11-08 12:55:37.007759+05:30, null, null).
+[SQL: INSERT INTO "SuperAdmin" (user_name, admin_name, email, password, max_hits, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::INTEGER, $6::TIMESTAMP WITHOUT TIME ZONE) RETURNING "SuperAdmin".admin_id, "SuperAdmin".created_at]
+[parameters: (None, 'superuser', 'superuser@netsmartz.net', '$2b$12$KWK9YipRwYkTj6c/gJx4JeHNVyy6jN6/1i3cH2bqs8LPuXKeO6RwW', 100000, None)]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2024-11-08 12:57:26,046 - config.log_config - ERROR - Error creating superuser: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.NotNullViolationError'>: null value in column "user_name" of relation "SuperAdmin" violates not-null constraint
+DETAIL:  Failing row contains (3, superuser, superuser@netsmartz.net, $2b$12$e2k94seoVMw/KGLb.ZJHRug3wBJj10/fwz85rtvd8p4Pfa3h/a51W, 100000, 2024-11-08 12:57:26.045455+05:30, null, null).
+[SQL: INSERT INTO "SuperAdmin" (user_name, admin_name, email, password, max_hits, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::INTEGER, $6::TIMESTAMP WITHOUT TIME ZONE) RETURNING "SuperAdmin".admin_id, "SuperAdmin".created_at]
+[parameters: (None, 'superuser', 'superuser@netsmartz.net', '$2b$12$e2k94seoVMw/KGLb.ZJHRug3wBJj10/fwz85rtvd8p4Pfa3h/a51W', 100000, None)]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2024-11-08 13:00:37,916 - config.log_config - ERROR - Error creating superuser: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.DataError'>: invalid input for query argument $1: '1' ('str' object cannot be interpreted as an integer)
+[SQL: INSERT INTO "SuperAdmin" (admin_id, user_name, admin_name, email, password, max_hits, updated_at) VALUES ($1::INTEGER, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::INTEGER, $7::TIMESTAMP WITHOUT TIME ZONE) RETURNING "SuperAdmin".created_at]
+[parameters: ('1', None, 'superuser', 'superuser@netsmartz.net', '$2b$12$zdSOqzsP5lAIN.vGkHQbCu7bSbTG0IWttBSzfvibsfD/nWwd9yPN6', 100000, None)]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)
+2024-11-08 13:03:54,929 - config.log_config - ERROR - Error creating superuser: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.DataError'>: invalid input for query argument $1: '1' ('str' object cannot be interpreted as an integer)
+[SQL: INSERT INTO "SuperAdmin" (admin_id, user_name, admin_name, email, password, max_hits, created_at, updated_at) VALUES ($1::INTEGER, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::INTEGER, $7::TIMESTAMP WITH TIME ZONE, $8::TIMESTAMP WITHOUT TIME ZONE)]
+[parameters: ('1', 'superadmin', 'superuser', 'superuser@netsmartz.net', '$2b$12$Tyf5d81tEWS4y04w2xFe8efjgxNuRYyxmoDcwaIgN6sJ5jzCt2hDK', 100000, datetime.datetime(2024, 11, 8, 13, 3, 54, 782266), None)]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)
+2024-11-08 13:04:33,944 - config.log_config - ERROR - Error creating superuser: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.DataError'>: invalid input for query argument $1: '1' ('str' object cannot be interpreted as an integer)
+[SQL: INSERT INTO "SuperAdmin" (admin_id, user_name, admin_name, email, password, max_hits, created_at, updated_at) VALUES ($1::INTEGER, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::INTEGER, $7::TIMESTAMP WITH TIME ZONE, $8::TIMESTAMP WITHOUT TIME ZONE)]
+[parameters: ('1', 'superadmin', 'superuser', 'superuser@netsmartz.net', '$2b$12$iB2q.JXxo6CokEENvzBFGeeWmYkiM9SVDe66k.ClaqC5DW.c9eQdO', 100000, datetime.datetime(2024, 11, 8, 13, 4, 33, 802130), datetime.datetime(2024, 11, 8, 13, 4, 33, 802130))]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)
+2024-11-08 13:05:28,623 - config.log_config - INFO - Superuser 'superuser' created successfully!
+2024-11-08 14:00:13,422 - config.log_config - ERROR - Error creating superuser: 'user_name' is an invalid keyword argument for Admin
+2024-11-08 14:00:54,909 - config.log_config - INFO - Superuser 'superuser' created successfully!
+2024-11-08 15:12:01,948 - config.log_config - INFO - Superuser 'superuser' created successfully!
+2024-11-08 15:13:02,127 - config.log_config - ERROR - Error extracting user information: not enough values to unpack (expected 6, got 5)
+2024-11-08 15:17:56,843 - config.log_config - ERROR - Error creating superuser: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "SuperAdmin_pkey"
+DETAIL:  Key (admin_id)=(1) already exists.
+[SQL: INSERT INTO "SuperAdmin" (admin_id, admin_name, email, password, max_hits, created_at, updated_at) VALUES ($1::INTEGER, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::INTEGER, $6::TIMESTAMP WITH TIME ZONE, $7::TIMESTAMP WITHOUT TIME ZONE)]
+[parameters: (1, 'superuser', 'superuser@netsmartz.net', '$2b$12$mXqXUjFsBn5RxISzVUIZzOYlwT5GhnyrPLvXq.tWSufhPCmhYph2G', 100000, datetime.datetime(2024, 11, 8, 15, 17, 56, 692691), datetime.datetime(2024, 11, 8, 15, 17, 56, 692691))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2024-11-08 15:18:55,189 - config.log_config - ERROR - Error creating superuser: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "SuperAdmin_email_key"
+DETAIL:  Key (email)=(superuser@netsmartz.net) already exists.
+[SQL: INSERT INTO "SuperAdmin" (admin_name, email, password, max_hits, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::INTEGER, $5::TIMESTAMP WITH TIME ZONE, $6::TIMESTAMP WITHOUT TIME ZONE) RETURNING "SuperAdmin".admin_id]
+[parameters: ('superuser', 'superuser@netsmartz.net', '$2b$12$JMKtFWK2gd/wEQpYTUwD8O1wYEkIdWGXu9ND//a1nFcfWA6Oq0fEe', 100000, datetime.datetime(2024, 11, 8, 15, 18, 55, 58083), datetime.datetime(2024, 11, 8, 15, 18, 55, 58083))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2024-11-08 15:45:31,122 - config.log_config - ERROR - Error extracting user information: too many values to unpack (expected 6)
+2024-11-08 15:47:03,972 - config.log_config - ERROR - Error extracting user information: too many values to unpack (expected 6)
+2024-11-08 15:49:14,845 - config.log_config - ERROR - Error extracting user information: too many values to unpack (expected 6)
+2024-11-08 15:49:44,840 - config.log_config - ERROR - Error extracting user information: too many values to unpack (expected 6)
+2024-11-08 15:52:57,798 - config.log_config - INFO - User email: $2b$12$O4imAXTUwdmfY/HOqrEICOdxf7tNkI3xV12xLQX7qZ3lNMqpIFroW, Role: superadmin
+2024-11-08 15:54:38,028 - config.log_config - INFO - User email: superuser@netsmartz.net, Role: superadmin
+2024-11-09 01:28:19,428 - config.log_config - INFO - User email: superuser@netsmartz.net, Role: superadmin
+2024-11-09 01:29:38,570 - config.log_config - INFO - User email: superuser@netsmartz.net, Role: superadmin
+2024-11-09 01:54:25,127 - config.log_config - INFO - User email: superuser@netsmartz.net, Role: superadmin
+2024-11-09 01:56:39,122 - config.log_config - INFO - User email: superuser@netsmartz.net, Role: superadmin
+2024-11-09 01:59:11,245 - config.log_config - INFO - User email: superuser@netsmartz.net, Role: superadmin
+2024-11-09 02:07:40,993 - config.log_config - INFO - User email: superuser@netsmartz.net, Role: superadmin
+2024-11-09 02:07:53,185 - config.log_config - ERROR - Error updating username: 'coroutine' object has no attribute 'fetchone'
+2024-11-09 02:11:29,636 - config.log_config - INFO - User email: superuser@netsmartz.net, Role: superadmin
+2024-11-09 02:21:08,954 - config.log_config - INFO - User email: superuser@netsmartz.net, Role: superadmin
+2024-11-09 02:23:26,540 - config.log_config - INFO - User email: user@example.com, Role: org
+2024-11-09 02:35:47,261 - config.log_config - INFO - User email: user183@example.com, Role: sub_org
