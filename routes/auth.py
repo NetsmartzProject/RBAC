@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from database.model import Admin,Organisation,SubOrganisation,User
+from database.model import Admin,Organisation,SubOrganisation,User, Role
 from Utills.oauth2 import create_access_token,get_current_user_with_roles,verify_password
 from database.database import get_db
 from datetime import timedelta
@@ -87,8 +87,7 @@ async def create(
     current_user: tuple = Depends(get_current_user_with_roles(["superadmin", 'org', 'sub_org']))
 ):
     user1, role = current_user
-    await check_duplicate_email(db, user.email)
-    print(user1.role ,"usrerrolesssssss")
+    await check_duplicate_email(db, user.email,user.username)
     if user1.role == 'superadmin':
         org = OrganisationBase(org_email=user.email, org_password=user.password, org_name=user.name, total_hits_limit=user.total_hits, parent_sub_org_name="" ,username=user.username)
         return await create_organization(org, db, current_user)
@@ -148,5 +147,36 @@ async def create_user(
     user1, role = current_user
     result = await user(org,user1,db)
     return result
+    
+@router.get("/subOrg")
+async def getSubOrganizations(
+    current_user: list = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org", "user"])),
+    db: AsyncSession = Depends(get_db)
+):
+    user_info, user_role = current_user
+    print(user_info,"userinf")
+    if user_role != 'org':
+        return {"message": "No Access"} 
 
+    result = await db.execute(select(SubOrganisation).filter(SubOrganisation.org_id == user_info[0]))
 
+    sub_organisations = result.scalars().all()
+
+    sub_organisations_list = [
+        {
+            "sub_org_id": sub_org.sub_org_id,
+            "org_id": sub_org.org_id,
+            "username": sub_org.username,
+            "sub_org_name": sub_org.sub_org_name,
+            "is_parent": sub_org.is_parent,
+            "email": sub_org.email,
+            "allocated_hits": sub_org.allocated_hits,
+            "remaining_hits": sub_org.remaining_hits,
+            "used_hits": sub_org.used_hits,
+            "created_at": sub_org.created_at.isoformat() if sub_org.created_at else None,
+            "updated_at": sub_org.updated_at.isoformat() if sub_org.updated_at else None,
+        }
+        for sub_org in sub_organisations
+    ]
+    
+    return sub_organisations_list

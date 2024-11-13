@@ -10,6 +10,7 @@ from sqlalchemy import (
     UniqueConstraint,
     CheckConstraint,
     Enum,
+    ARRAY
 )
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
@@ -31,6 +32,17 @@ class Role(enum.Enum):
     ORG = "org"
     SUB_ORG = "sub_org"
     USER = "user"
+
+
+class MasterTable(Base):
+    __tablename__ = "MasterTable"
+    
+    tool_id=Column(Integer,primary_key=True,index=True)
+    tool_name=Column(String(255),nullable=False,unique=True)
+    description=Column(String(300),nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
+    updated_at = Column(DateTime, nullable=True, default=None)
 
 
 class Admin(Base):
@@ -62,11 +74,17 @@ class Organisation(Base):
         Integer, ForeignKey("SuperAdmin.admin_id"), nullable=False
     )
     is_active = Column(Boolean, default=True)
+    
+    tool_ids = Column(ARRAY(Integer), nullable=False, default=[])
+    tool_grant_dates = Column(ARRAY(TIMESTAMP(timezone=True)), nullable=False, default=[])
+    
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, onupdate=func.now())
+    
+
 
     # Relationships
-    admin = relationship("Admin", back_populates="organisations")
+    admin = relationship("Admin", back_populates="organisations",foreign_keys=[created_by_admin])
     sub_organisations = relationship("SubOrganisation", back_populates="organisation")
     hit_allocation_rules = relationship(
         "HitAllocationRule", back_populates="organisation"
@@ -91,11 +109,16 @@ class SubOrganisation(Base):
     allocated_hits = Column(Integer, nullable=False)
     remaining_hits = Column(Integer, nullable=False)
     used_hits = Column(Integer, nullable=False)
+    
+    tool_ids = Column(ARRAY(Integer), nullable=False, default=[])
+    tool_grant_dates = Column(ARRAY(TIMESTAMP(timezone=True)), nullable=False, default=[])
+    
+    
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, onupdate=func.now())
 
     # Relationships
-    organisation = relationship("Organisation", back_populates="sub_organisations")
+    organisation = relationship("Organisation", back_populates="sub_organisations",foreign_keys=[org_id])
     users = relationship("User", back_populates="sub_organisation")
     hit_usage_logs = relationship("HitUsageLog", back_populates="sub_organisation")
 
@@ -146,11 +169,15 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     allocated_hits = Column(Integer, nullable=True,default=0)
     remaninig_hits=Column(Integer,nullable=True,default=0)
+    
+    tool_ids = Column(ARRAY(Integer), nullable=False, default=[])
+    tool_grant_dates = Column(ARRAY(TIMESTAMP(timezone=True)), nullable=False, default=[])
 
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, onupdate=func.now())
 
-    sub_organisation = relationship("SubOrganisation", back_populates="users")
+    sub_organisation = relationship("SubOrganisation", back_populates="users", foreign_keys=[sub_org_id])
+
 
 
 class HitUsageLog(Base):

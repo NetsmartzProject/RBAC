@@ -17,7 +17,13 @@ class Settings(BaseSettings):
     access_token_expire_minutes:int
     username:str
     
-
+    EMAIL_HOST: str
+    EMAIL_PORT: int
+    EMAIL_USERNAME: str
+    EMAIL_PASSWORD: str
+    EMAIL_USE_TLS: bool
+    EMAIL_SSL: bool
+    EMAIL_FROM: str
     
     class Config:
         env_file = '.env'

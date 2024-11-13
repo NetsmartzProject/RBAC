@@ -48,7 +48,7 @@ class OrganisationResponse(BaseModel):
     org_name: str
     org_email: EmailStr
     username: str = Field(..., pattern=r'^[a-zA-Z0-9]+$', min_length=1)  
-
+    total_hits_limit:int
 
 class UserCommon(BaseModel):
     name : str
@@ -62,12 +62,8 @@ class UserResponse(BaseModel):
     name:str
     email : EmailStr
     allocated_hits:int
-    username: str = Field(..., pattern=r'^[a-zA-Z0-9]+$', min_length=1) 
-
-
-
-    
-    
+    user_name: str = Field(..., pattern=r'^[a-zA-Z0-9]+$', min_length=1) 
+    created_by_admin: int
 
 class UserLogin(BaseModel):
     username: str
@@ -75,11 +71,11 @@ class UserLogin(BaseModel):
 
 class VerifyUser(BaseModel):
     Email:EmailStr
-    Role:str
+    Role:str 
+    
 class ResponseData(BaseModel):
     status: str
     data: Union[OrganisationBase, SubOrganisationBase, UserBase]
-
 
 class CommonBase(BaseModel):
     name: str 
@@ -87,6 +83,9 @@ class CommonBase(BaseModel):
     password: str
     allocated_hits: Optional[int] = None  
     total_hits_limit: Optional[int] = None  
+       
+class ForgotPassword(BaseModel):
+    email:EmailStr
     
     class Config:
          arbitrary_types_allowed = True

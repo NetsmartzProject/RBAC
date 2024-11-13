@@ -1,5 +1,11 @@
+import random
+import string
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import smtplib
 from fastapi import APIRouter, Depends ,HTTPException,status
-from Utills.oauth2 import get_current_user_with_roles
+from Utills.oauth2 import get_current_user_with_roles,verify_password,hash_password
 from config.log_config import logger
 from database.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,11 +13,99 @@ from sqlalchemy import text, select,update
 from database.model import Admin,Organisation,SubOrganisation, User
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from config.pydantic_config import Settings
 
 router = APIRouter()
 
 
-from fastapi import HTTPException, Depends
+def generate_temp_password(length=8):
+    """Generate a random temporary password."""
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for i in range(length))
+
+async def send_temp_password_email(recipient_email, temp_password):
+    """Send an email with the temporary password."""
+    subject = "Temporary Password for Your Account"
+    body = (
+        f"Dear user,\n\n"
+        f"Here is your temporary password: {temp_password}\n\n"
+        "This temp password can be used for login. Please change your password after logging in to avoid any security concerns."
+    )
+   
+    msg = MIMEMultipart()
+    msg['Subject'] = subject
+    msg['From'] = "ak0590810@gmail.com"  
+    msg['To'] = recipient_email
+    
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        logger.info(f"Connecting to SMTP server: {"smtp.gmail.com"}:{587}")
+        smtp_server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
+        
+        if True:
+            logger.info("Starting TLS connection...")
+            smtp_server.starttls()
+            smtp_server.ehlo()
+        
+        logger.info(f"Authenticating as: {"ak0590810@gmail.com"}")
+        smtp_server.login("ak0590810@gmail.com", "vjgb uywp kiba gixu")
+        
+        smtp_server.send_message(msg)
+        smtp_server.quit()
+        
+        logger.info(f"Password reset email sent successfully to {recipient_email}")
+        return True
+        
+    except smtplib.SMTPAuthenticationError as auth_error:
+        error_msg = f"SMTP Authentication Error: {str(auth_error)}"
+        logger.error(error_msg)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Email authentication failed: {error_msg}"
+        )
+    except smtplib.SMTPServerDisconnected as disc_error:
+        error_msg = f"SMTP Server Disconnected: {str(disc_error)}"
+        logger.error(error_msg)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Email server connection failed"
+        )
+    except smtplib.SMTPException as smtp_error:
+        error_msg = f"SMTP Error: {str(smtp_error)}"
+        logger.error(error_msg)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Email sending failed"
+        )
+        
+    except Exception as e:
+        error_msg = f"Failed to send password reset email: {str(e)}"
+    logger.error(error_msg)
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to send reset password email"
+    )
+
+
+async def send_confirmation_email(email):
+    """Send an email confirming the password change."""
+    subject = "Password Change Confirmation"
+    body = "Dear user,\n\nYour password has been successfully changed.\n\nBest regards,\nYour Team"
+
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = "ak0590810@gmail.com"
+    msg['To'] = email
+
+    try:
+        with smtplib.SMTP("smtp.example.com", 587) as server: 
+            server.starttls()
+            server.login("ak0590810@gmail.com", "vjgb uywp kiba gixu")  
+            server.sendmail(email, msg.as_string())
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to send email")
+
 
 @router.get("/fetch-details")
 async def fetch_details(
@@ -26,27 +120,32 @@ async def fetch_details(
             user_id = user_info[2]
             user_allocated_hit = user_info[1]
             username = user_info[3]
+            name=user_info[5]
             user_email = user_info[6]  
             return {
                 "user_id": user_id,
                 "user_hit": user_allocated_hit,
                 "username": username,
+                "name":name,
                 "email": user_email 
             }
         elif user_role == "sub_org":
             sub_org_id = user_info[0]
             sub_org_name = user_info[5]
+            sub_org_username=user_info[3]
             sub_org_email = user_info[6]
             sub_allocated_hit=user_info[1]
             return {
                 "sub_org_id": sub_org_id,
                 "sub_org_name": sub_org_name,
+                "sub_org_username":sub_org_username,
                 "email": sub_org_email,
                 "Allocated-Hit":sub_allocated_hit
             }
 
         elif user_role == "org":
             org_id = user_info[0]
+            org_username=user_info[3]
             org_name = user_info[5]
             org_hits = user_info[1]
             org_email = user_info[6]
@@ -55,12 +154,14 @@ async def fetch_details(
                 "org_id": org_id,
                 "org_name": org_name,
                 "available_hits": org_hits,
-                "email": org_email
+                "email": org_email,
+                "org_username":org_username
             }
 
         elif user_role == "superadmin":
             superadmin_id = user_info[0]
-            superadmin_name = user_info[3]
+            superadmin_username=user_info[3]
+            superadmin_name = user_info[5]
             superadmin_email = user_info[7]
             superadmin_max_hits=user_info[1]
 
@@ -68,7 +169,8 @@ async def fetch_details(
                 "superadmin_id": superadmin_id,
                 "superadmin_name": superadmin_name,
                 "email": superadmin_email,
-                "Max-hit":superadmin_max_hits
+                "Max-hit":superadmin_max_hits,
+                "superadmin_username":superadmin_username
             }
 
         else:
@@ -130,12 +232,10 @@ async def edit_username(
     }
 
 
-
-    
-          
+        
 @router.get("/list-users")
 async def list_users(
-     db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org"]))
 ):
     try:
@@ -161,4 +261,73 @@ async def list_users(
             status_code=500,
             detail="An unexpected error occurred while retrieving the user listing."
         )
-    
+
+
+
+
+@router.post("/forgotpassword")
+async def forgot_password(
+    email: str,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        user_query = select(User).where(User.email == email)
+        user_result = await db.execute(user_query)
+        user = user_result.scalars().first()
+
+        org_query = select(Organisation).where(Organisation.email == email)
+        org_result = await db.execute(org_query)
+        organisation = org_result.scalars().first()
+
+        sub_org_query = select(SubOrganisation).where(SubOrganisation.email == email)
+        sub_org_result = await db.execute(sub_org_query)
+        suborganisation = sub_org_result.scalars().first()
+
+        if user or organisation or suborganisation:
+            temp_password = generate_temp_password()
+            
+            await send_temp_password_email(email, temp_password)
+            return {"message": "Temporary password has been sent to your email"}
+        else:
+            return {"message": "Email does not exist"}
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+        
+@router.post("/changepassword")
+async def change_password(
+    email: str,
+    old_password: str,
+    new_password: str,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        user_query = select(User).where(User.email == email)
+        user_result = await db.execute(user_query)
+        user = user_result.scalars().first()
+
+        org_query = select(Organisation).where(Organisation.email == email)
+        org_result = await db.execute(org_query)
+        organisation = org_result.scalars().first()
+
+        sub_org_query = select(SubOrganisation).where(SubOrganisation.email == email)
+        sub_org_result = await db.execute(sub_org_query)
+        suborganisation = sub_org_result.scalars().first()
+
+        record = user or organisation or suborganisation
+        if not record:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email does not exist")
+
+        if not verify_password(old_password, record.password):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Old password is incorrect")
+
+        record.password = hash_password(new_password)
+        await db.commit()
+
+
+        return {"message": "Yes, it is true. Your password has been changed successfully."}
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+

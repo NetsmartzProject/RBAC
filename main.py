@@ -9,6 +9,7 @@ from config.log_config import logger
 from Utills.oauth2 import verify_password
 from routes.auth import router as auth_router
 from routes.organisation import router as org_router
+from routes.tools import router as tool_router
 
 
 app = FastAPI()
@@ -24,6 +25,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(org_router)
+app.include_router(tool_router)
 
 
 # FOR THE DATABASE CONNECTIVITY WITH POSTGRESS ASYNCHRONOUSLY
