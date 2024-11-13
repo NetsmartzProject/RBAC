@@ -187,10 +187,11 @@ async def fetch_details(
         )
 
 
-
 @router.put("/editpersonalprofile")
-async def edit_username(
-    new_username: str,
+async def edit_profile(
+    new_name: str = None,
+    new_username: str = None,
+    new_email: str = None,
     db: AsyncSession = Depends(get_db),
     current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org", "user"]))
 ):
@@ -208,13 +209,9 @@ async def edit_username(
         username_field = "sub_org_name"  
     elif user_role == "user":
         model = User
-        username_field = "username" 
+        username_field = "username"  
     else:
         raise HTTPException(status_code=403, detail="Invalid role")
-
-    existing_user = await db.execute(select(model).where(getattr(model, username_field) == new_username))
-    if existing_user.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="This username has already been taken. Please choose another one.")
 
     result = await db.execute(select(model).where(model.email == user_email))
     user = result.scalar_one_or_none()
@@ -222,15 +219,32 @@ async def edit_username(
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
 
-    setattr(user, username_field, new_username)  
+    if new_username:
+        existing_user = await db.execute(select(model).where(getattr(model, username_field) == new_username))
+        if existing_user.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="This username has already been taken. Please choose another one.")
+        setattr(user, username_field, new_username)
+
+    if new_email:
+        existing_email_user = await db.execute(select(model).where(model.email == new_email))
+        if existing_email_user.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="This email has already been taken. Please choose another one.")
+        user.email = new_email
+
+    if new_name:
+        user.name = new_name 
+
     await db.commit()
-    await db.refresh(user)  
+    await db.refresh(user)
 
     return {
-        "message": "Username updated successfully.",
-        "updated_username": getattr(user, username_field)
+        "message": "Profile updated successfully.",
+        "updated_profile": {
+            "name": user.name,
+            "username": getattr(user, username_field),
+            "email": user.email
+        }
     }
-
 
         
 @router.get("/list-users")
@@ -264,7 +278,6 @@ async def list_users(
 
 
 
-
 @router.post("/forgotpassword")
 async def forgot_password(
     email: str,
@@ -285,8 +298,19 @@ async def forgot_password(
 
         if user or organisation or suborganisation:
             temp_password = generate_temp_password()
-            
+            hashed_temp_password = hash_password(temp_password)
+
+            if user:
+                user.password = hashed_temp_password
+            elif organisation:
+                organisation.password = hashed_temp_password
+            elif suborganisation:
+                suborganisation.password = hashed_temp_password
+
+            await db.commit()
+
             await send_temp_password_email(email, temp_password)
+            
             return {"message": "Temporary password has been sent to your email"}
         else:
             return {"message": "Email does not exist"}
@@ -294,7 +318,7 @@ async def forgot_password(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-        
+      
 @router.post("/changepassword")
 async def change_password(
     email: str,

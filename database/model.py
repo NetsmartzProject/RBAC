@@ -34,10 +34,10 @@ class Role(enum.Enum):
     USER = "user"
 
 
-class MasterTable(Base):
-    __tablename__ = "MasterTable"
+class ToolMaster(Base):
+    __tablename__ = "ToolMaster"
     
-    tool_id=Column(Integer,primary_key=True,index=True)
+    tool_id=Column(Integer,primary_key=True, autoincrement=True, index=True)
     tool_name=Column(String(255),nullable=False,unique=True)
     description=Column(String(300),nullable=False)
     is_active = Column(Boolean, default=True)

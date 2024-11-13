@@ -7,7 +7,6 @@ from typing import Literal
 from database.model import Role
 
 class Tool(BaseModel):
-    toold:int
     toolname:str
     description:str
     

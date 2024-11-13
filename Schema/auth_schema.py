@@ -31,6 +31,15 @@ class SuborganisationResponse(BaseModel):
     created_by_org_id:int
 
 
+class EditOrganisation(BaseModel):
+    org_name:str
+    org_email:EmailStr
+    total_hits_limit:int
+    username: str = Field(..., pattern=r'^[a-zA-Z0-9]+$', min_length=1) 
+    tools: List[int] = []
+
+
+# Remaining are tools in EditOrganisation 
     
 class OrganisationBase(BaseModel):
     org_name: str
@@ -86,7 +95,7 @@ class CommonBase(BaseModel):
        
 class ForgotPassword(BaseModel):
     email:EmailStr
-    
+  
     class Config:
          arbitrary_types_allowed = True
 

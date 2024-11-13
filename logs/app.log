@@ -148,3 +148,23 @@ DETAIL:  Key (admin_id)=(1) already exists.
 2024-11-12 16:00:48,090 - config.log_config - INFO - User role: superadmin
 2024-11-12 16:01:49,093 - config.log_config - INFO - User role: org
 2024-11-12 16:02:54,902 - config.log_config - INFO - User role: user
+2024-11-13 21:50:28,404 - config.log_config - INFO - Connecting to SMTP server: smtp.gmail.com:587
+2024-11-13 21:50:29,189 - config.log_config - INFO - Starting TLS connection...
+2024-11-13 21:50:30,234 - config.log_config - INFO - Authenticating as: ak0590810@gmail.com
+2024-11-13 21:50:32,554 - config.log_config - INFO - Password reset email sent successfully to royabhinandan.002@gmail.com
+2024-11-13 22:01:01,422 - config.log_config - INFO - Connecting to SMTP server: smtp.gmail.com:587
+2024-11-13 22:01:01,838 - config.log_config - INFO - Starting TLS connection...
+2024-11-13 22:01:02,872 - config.log_config - INFO - Authenticating as: ak0590810@gmail.com
+2024-11-13 22:01:05,352 - config.log_config - INFO - Password reset email sent successfully to royabhinandan.002@gmail.com
+2024-11-13 23:02:49,542 - config.log_config - INFO - Updating organization with org_id 51: org_name='string' org_email='user1@example.com' org_password='string' total_hits_limit=100 username='ljAFV5D2tOkVL5VkPkqbGCvYHb69hfU' available_hits=10 parent_sub_org_name='string'
+2024-11-13 23:02:49,542 - config.log_config - INFO - Organization after update: <database.model.Organisation object at 0x00000269ADBB05F0>
+2024-11-13 23:05:34,069 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x00000258CB194620>
+2024-11-13 23:12:21,555 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x0000013FF6D8BA10>
+2024-11-13 23:40:07,675 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x000001FB33DA4D10>
+2024-11-13 23:40:56,997 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x000001FB33E48080>
+2024-11-13 23:55:27,582 - config.log_config - INFO - Superuser 'superuser1' created successfully!
+2024-11-13 23:57:19,016 - config.log_config - INFO - User role: superadmin
+2024-11-14 00:01:38,306 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x00000248F19A6210>
+2024-11-14 00:02:29,301 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x00000248F19A71A0>
+2024-11-14 00:08:24,759 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x0000023FCBEBC590>
+2024-11-14 00:08:59,874 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x0000023FCBEBF7A0>

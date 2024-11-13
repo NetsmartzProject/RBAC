@@ -21,7 +21,6 @@ import bcrypt
 
 
 oauth2_scheme = HTTPBearer()
-# pwd_context = CryptContext(schemes=["bcrypt"],deprecated = "auto")
 
 
 SECRET_KEY = settings.secret_key
@@ -34,11 +33,9 @@ def hash_password(password : str):
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
     return hashed.decode('utf-8')
-    # return pwd_context.hash(password)
 
 def verify_password(plain_password, hashed_password):
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
-    # return pwd_context.verify(plain_password,hashed_password)
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
@@ -50,34 +47,9 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# async def check_duplicate_email(db: AsyncSession, email: str):
-#     try:
-#         admin_query=select(Admin).where(Admin.email==email)
-#         admin_result=await db.execute(admin_query)
-#         if admin_result.scalar_one_or_none():
-#             raise HTTPException(status_code=400,detail="Email already Exists")
-        
-#         org_query = select(Organisation).where(Organisation.email == email)
-#         org_result = await db.execute(org_query)
-#         if org_result.scalar_one_or_none():
-#             raise HTTPException(status_code=400, detail="Email already Exists .")
-        
-#         suborg_query = select(SubOrganisation).where(SubOrganisation.email == email)
-#         suborg_result = await db.execute(suborg_query)
-#         if suborg_result.scalar_one_or_none():
-#             raise HTTPException(status_code=400, detail="Email already Exists.")
-        
-#         user_query = select(User).where(User.email == email)
-#         user_result = await db.execute(user_query)
-#         if user_result.scalar_one_or_none():
-#             raise HTTPException(status_code=400, detail="Email already Exists.")
-    
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Error checking duplicate email: {str(e)}")
 
 async def check_duplicate_email(db: AsyncSession, email: str, username: str):
     try:
-        # Check for duplicate email
         admin_query = select(Admin).where(Admin.email == email)
         admin_result = await db.execute(admin_query)
         if admin_result.scalar_one_or_none():
@@ -98,7 +70,6 @@ async def check_duplicate_email(db: AsyncSession, email: str, username: str):
         if user_result.scalar_one_or_none():
             raise HTTPException(status_code=400, detail="Email already exists.")
         
-        # Check for duplicate username
         admin_username_query = select(Admin).where(Admin.username == username)
         admin_username_result = await db.execute(admin_username_query)
         if admin_username_result.scalar_one_or_none():
@@ -352,7 +323,5 @@ async def user(userbase: UserBase, current_user: tuple, db: AsyncSession):
         await db.rollback()
         print(f"Error creating user: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
-
-
 
 

@@ -9,9 +9,8 @@ from typing import Union
 from sqlalchemy import text, select
 from sqlalchemy.orm import Session
 from config.pydantic_config import settings
-from Utills.tool import mastertool,assign_tools_to_organisation,assign_tools_to_suborganisation,assign_tools_to_user
+from Utills.tool import add_tool,assign_tools_to_organisation,assign_tools_to_suborganisation,assign_tools_to_user
 from Schema.tool_schema import Tool,ToolResponse
-from database.model import MasterTable
 from datetime import datetime
 
 
@@ -56,27 +55,17 @@ async def getSubOrganizations(
 
 
 
-@router.post("/create_tools")
-async def creat_tools(
-    user: Tool,
+@router.post("/tool")
+async def creat_tool(
+    tool: Tool,
     db: AsyncSession = Depends(get_db),
     current_user: tuple = Depends(get_current_user_with_roles(["superadmin"]))
     ):
-    user1, role = current_user
-    if user1.role == 'superadmin':
-        org = Tool(toold=user.toold, toolname=user.toolname, description=user.description)
-        return await create_tool(org, db, current_user)
-
-
-async def create_tool(
-    org: Tool,
-    db: AsyncSession,
-    current_user: tuple
-):
     user, role = current_user
-    print(user)
-    result = await mastertool(org, user, db)
+    result = await add_tool(tool, user, db)
     return result
+
+
 
 
 
