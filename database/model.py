@@ -10,6 +10,7 @@ from sqlalchemy import (
     UniqueConstraint,
     CheckConstraint,
     Enum,
+    ARRAY
 )
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
@@ -33,11 +34,23 @@ class Role(enum.Enum):
     USER = "user"
 
 
+class ToolMaster(Base):
+    __tablename__ = "ToolMaster"
+    
+    tool_id=Column(Integer,primary_key=True, autoincrement=True, index=True)
+    tool_name=Column(String(255),nullable=False,unique=True)
+    description=Column(String(300),nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
+    updated_at = Column(DateTime, nullable=True, default=None)
+
+
 class Admin(Base):
     __tablename__ = "SuperAdmin"
 
     admin_id = Column(Integer, primary_key=True, index=True)
-    admin_name = Column(String, nullable=False,unique=True)
+    admin_name = Column(String(255), nullable=False)
+    username = Column(String, nullable=False,unique=True)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     max_hits = Column(Integer, nullable=True)
@@ -51,7 +64,7 @@ class Organisation(Base):
     __tablename__ = "organisations"
 
     org_id = Column(Integer, primary_key=True, autoincrement=True)
-    # org_user_name = Column(String, nullable=False,unique=True)
+    username = Column(String, nullable=False,unique=True)
     org_name = Column(String(255), nullable=False)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
@@ -61,11 +74,17 @@ class Organisation(Base):
         Integer, ForeignKey("SuperAdmin.admin_id"), nullable=False
     )
     is_active = Column(Boolean, default=True)
+    
+    tool_ids = Column(ARRAY(Integer), nullable=False, default=[])
+    tool_grant_dates = Column(ARRAY(TIMESTAMP(timezone=True)), nullable=False, default=[])
+    
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, onupdate=func.now())
+    
+
 
     # Relationships
-    admin = relationship("Admin", back_populates="organisations")
+    admin = relationship("Admin", back_populates="organisations",foreign_keys=[created_by_admin])
     sub_organisations = relationship("SubOrganisation", back_populates="organisation")
     hit_allocation_rules = relationship(
         "HitAllocationRule", back_populates="organisation"
@@ -82,7 +101,7 @@ class SubOrganisation(Base):
 
     sub_org_id = Column(Integer, primary_key=True)
     org_id = Column(Integer, ForeignKey("organisations.org_id"), nullable=False)
-    # sub_org_user_name = Column(String, nullable=False,unique=True)
+    username = Column(String, nullable=False,unique=True)
     sub_org_name = Column(String(255), nullable=False)
     is_parent = Column(Boolean, default=False)
     email = Column(String, unique=True, nullable=False)
@@ -90,11 +109,16 @@ class SubOrganisation(Base):
     allocated_hits = Column(Integer, nullable=False)
     remaining_hits = Column(Integer, nullable=False)
     used_hits = Column(Integer, nullable=False)
+    
+    tool_ids = Column(ARRAY(Integer), nullable=False, default=[])
+    tool_grant_dates = Column(ARRAY(TIMESTAMP(timezone=True)), nullable=False, default=[])
+    
+    
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, onupdate=func.now())
 
     # Relationships
-    organisation = relationship("Organisation", back_populates="sub_organisations")
+    organisation = relationship("Organisation", back_populates="sub_organisations",foreign_keys=[org_id])
     users = relationship("User", back_populates="sub_organisation")
     hit_usage_logs = relationship("HitUsageLog", back_populates="sub_organisation")
 
@@ -138,18 +162,22 @@ class User(Base):
         Integer, ForeignKey("sub_organisations.sub_org_id"), nullable=False
     )
     username = Column(String, nullable=False,unique=True)
-    # name = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
     role = Column(Enum(Role), nullable=False)
     is_active = Column(Boolean, default=True)
     allocated_hits = Column(Integer, nullable=True,default=0)
     remaninig_hits=Column(Integer,nullable=True,default=0)
+    
+    tool_ids = Column(ARRAY(Integer), nullable=False, default=[])
+    tool_grant_dates = Column(ARRAY(TIMESTAMP(timezone=True)), nullable=False, default=[])
 
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, onupdate=func.now())
 
-    sub_organisation = relationship("SubOrganisation", back_populates="users")
+    sub_organisation = relationship("SubOrganisation", back_populates="users", foreign_keys=[sub_org_id])
+
 
 
 class HitUsageLog(Base):

@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from database import model,database
-from passlib.context import CryptContext
 from uuid import UUID
 from config.pydantic_config import settings
 from database.database import get_db
@@ -17,9 +16,12 @@ from fastapi import Request, HTTPException
 from Schema.auth_schema import OrganisationBase,OrganisationResponse,UserResponse,SubOrganisationBase,SuborganisationResponse,UserBase,CommonBase
 from database.model import Organisation,SubOrganisation,User,Admin
 from Utills import oauth2
+from config.log_config import logger
+import bcrypt
+
 
 oauth2_scheme = HTTPBearer()
-pwd_context = CryptContext(schemes=["bcrypt"],deprecated = "auto")
+
 
 SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
@@ -28,10 +30,12 @@ ACCESS_TOKEN_EXPIRES_MINUTES = settings.access_token_expire_minutes
 
 
 def hash_password(password : str):
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password,hashed_password)
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
@@ -43,31 +47,51 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def check_duplicate_email(db: AsyncSession, email: str):
+
+async def check_duplicate_email(db: AsyncSession, email: str, username: str):
     try:
-        admin_query=select(Admin).where(Admin.email==email)
-        admin_result=await db.execute(admin_query)
+        admin_query = select(Admin).where(Admin.email == email)
+        admin_result = await db.execute(admin_query)
         if admin_result.scalar_one_or_none():
-            raise HTTPException(status_code=400,detail="Email already Exists")
-        
+            raise HTTPException(status_code=400, detail="Email already exists.")
+
         org_query = select(Organisation).where(Organisation.email == email)
         org_result = await db.execute(org_query)
         if org_result.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Email already Exists .")
-        
+            raise HTTPException(status_code=400, detail="Email already exists.")
+
         suborg_query = select(SubOrganisation).where(SubOrganisation.email == email)
         suborg_result = await db.execute(suborg_query)
         if suborg_result.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Email already Exists.")
-        
+            raise HTTPException(status_code=400, detail="Email already exists.")
+
         user_query = select(User).where(User.email == email)
         user_result = await db.execute(user_query)
         if user_result.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Email already Exists.")
+            raise HTTPException(status_code=400, detail="Email already exists.")
+        
+        admin_username_query = select(Admin).where(Admin.username == username)
+        admin_username_result = await db.execute(admin_username_query)
+        if admin_username_result.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Username already exists.")
+
+        org_username_query = select(Organisation).where(Organisation.username == username)
+        org_username_result = await db.execute(org_username_query)
+        if org_username_result.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Username already exists.")
+
+        suborg_username_query = select(SubOrganisation).where(SubOrganisation.username == username)
+        suborg_username_result = await db.execute(suborg_username_query)
+        if suborg_username_result.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Username already exists.")
+
+        user_username_query = select(User).where(User.username == username)
+        user_username_result = await db.execute(user_username_query)
+        if user_username_result.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Username already exists.")
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error checking duplicate email: {str(e)}")
-
+        raise HTTPException(status_code=500, detail=f"Error checking duplicate email or username: {str(e)}")
 
 def get_current_user_with_roles(roles: List[Literal["superadmin", "user", "org", "sub_org"]]):
     async def _get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
@@ -99,25 +123,25 @@ async def get_current_user(
             """
         SELECT id, max_hits, user_id, username, password, name, email, role
 FROM (
-    SELECT admin_id as id, '' as user_id, max_hits as max_hits, admin_name AS username, password, admin_name AS name, email, 'superadmin' AS role
+    SELECT admin_id as id, '' as user_id, max_hits as max_hits, username AS username, password, admin_name AS name, email, 'superadmin' AS role
     FROM "SuperAdmin"
     WHERE admin_name = :username OR email = :username
 
     UNION
 
-    SELECT org_id as id, '' as user_id, total_hits_limit as max_hits, NULL AS username, password, org_name AS name, email, 'org' AS role
+    SELECT org_id as id, '' as user_id, total_hits_limit as max_hits, username AS username, password, org_name AS name, email, 'org' AS role
     FROM "organisations"
     WHERE email = :username
 
     UNION
 
-    SELECT sub_org_id as id, '' as user_id, allocated_hits as max_hits, NULL AS username, password, sub_org_name AS name, email, 'sub_org' AS role
+    SELECT sub_org_id as id, '' as user_id, allocated_hits as max_hits, username AS username, password, sub_org_name AS name, email, 'sub_org' AS role
     FROM "sub_organisations"
     WHERE email = :username
 
     UNION
 
-    SELECT 0 as id, user_id, allocated_hits as max_hits, username, password, username AS name, email, 'user' AS role
+    SELECT 0 as id, user_id, allocated_hits as max_hits, username, password, name AS name, email, 'user' AS role
     FROM "users"
     WHERE email = :username
 ) AS combined
@@ -144,11 +168,12 @@ async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSess
         
         total_hits_limit=current_user.max_hits
         available_hits=(org.total_hits_limit - (org.total_hits_limit * 0.10))
-        print(org, created_by_admin_id, "this is the organozation from service")
+        print(org, created_by_admin_id, "this is the organozation from service",org.username)
         new_org = Organisation(
         email=org.org_email,
         password=hashed_password,
         org_name=org.org_name,
+        username=org.username,
         total_hits_limit=org.total_hits_limit,
         available_hits=available_hits,
         created_by_admin = created_by_admin_id
@@ -165,12 +190,13 @@ async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSess
         
         parent_sub_org = SubOrganisation(
             org_id=new_org.org_id,
-            sub_org_name=parent_sub_org_name,
+            sub_org_name=new_org.org_name,
             is_parent=True,
             email=f"{org.org_email.split('@')[0]}_sub@{org.org_email.split('@')[1]}",
             password=hashed_password,
             allocated_hits=ten_percent_of_max_hit,  
             remaining_hits=0,
+            username=org.username,
             # remaining_hits=org.available_hits,
             used_hits=0
         )
@@ -186,6 +212,7 @@ async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSess
             created_by_admin=new_org.created_by_admin,
             org_name=new_org.org_name,
             org_email=new_org.email,
+            username=org.username,
             total_hits_limit=org.total_hits_limit
     )
     
@@ -217,6 +244,7 @@ async def suborganization(suborg: SubOrganisationBase, current_user: tuple, db: 
         new_sub_org = SubOrganisation(
             sub_org_name=suborg.sub_org_name,
             email=suborg.sub_org_email,
+            username=suborg.username,
             password=hashed_password,
             allocated_hits=suborg.allocated_hits,
             remaining_hits=suborg.allocated_hits,
@@ -229,11 +257,13 @@ async def suborganization(suborg: SubOrganisationBase, current_user: tuple, db: 
         await db.commit()
         await db.refresh(new_sub_org)
         
+        print("This is from suborgnaisation",suborg)
         return SuborganisationResponse(
             sub_org_name=suborg.sub_org_name,
             sub_org_email=suborg.sub_org_email,
+            username=suborg.username,
             allocated_hits=suborg.allocated_hits,
-            created_by_org_id=new_sub_org.sub_org_id
+            created_by_org_id=new_sub_org.org_id
         )  
 
     except Exception as e:
@@ -267,8 +297,9 @@ async def user(userbase: UserBase, current_user: tuple, db: AsyncSession):
         current_sub_org.allocated_hits -= userbase.allocated_hits
         await db.commit()  
         new_user = User(
-            username=userbase.username,
+            name=userbase.name,
             email=userbase.email,
+            username=userbase.username,
             password=hashed_password,
             sub_org_id=sub_org_id,
             allocated_hits=userbase.allocated_hits,
@@ -279,13 +310,18 @@ async def user(userbase: UserBase, current_user: tuple, db: AsyncSession):
         await db.commit()
         await db.refresh(new_user)
 
+        print(userbase.username,"hii")
         return UserResponse(
-            name=userbase.username,
+            name=userbase.name,
+            user_name=userbase.username,
             email=userbase.email,
             allocated_hits=userbase.allocated_hits,
+            created_by_admin=sub_org_id
         )  
 
     except Exception as e:
         await db.rollback()
         print(f"Error creating user: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
+
+
