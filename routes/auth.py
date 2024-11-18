@@ -52,10 +52,16 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
 )
 
     user_db = db_user.fetchone()
+    if user_db is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incoorect Username",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     if not user or not verify_password(user.password, user_db.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect  password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     

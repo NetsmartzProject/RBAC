@@ -121,27 +121,27 @@ async def get_current_user(
     result = await db.execute(
         text(
             """
-        SELECT id, max_hits, user_id, username, password, name, email, role
+        SELECT id, max_hits,remaninig_hits, user_id, username, password, name, email, role
 FROM (
-    SELECT admin_id as id, '' as user_id, max_hits as max_hits, username AS username, password, admin_name AS name, email, 'superadmin' AS role
+    SELECT admin_id as id, '' as user_id, 0 as remaninig_hits , max_hits as max_hits, username AS username, password, admin_name AS name, email, 'superadmin' AS role
     FROM "SuperAdmin"
     WHERE admin_name = :username OR email = :username
 
     UNION
 
-    SELECT org_id as id, '' as user_id, total_hits_limit as max_hits, username AS username, password, org_name AS name, email, 'org' AS role
+    SELECT org_id as id, '' as user_id, total_hits_limit as max_hits, available_hits as remaninig_hits, username AS username, password, org_name AS name, email, 'org' AS role
     FROM "organisations"
     WHERE email = :username
 
     UNION
 
-    SELECT sub_org_id as id, '' as user_id, allocated_hits as max_hits, username AS username, password, sub_org_name AS name, email, 'sub_org' AS role
+    SELECT sub_org_id as id, '' as user_id, allocated_hits as max_hits,remaining_hits as remaining_hits, username AS username, password, sub_org_name AS name, email, 'sub_org' AS role
     FROM "sub_organisations"
     WHERE email = :username
 
     UNION
 
-    SELECT 0 as id, user_id, allocated_hits as max_hits, username, password, name AS name, email, 'user' AS role
+    SELECT 0 as id, user_id, allocated_hits as max_hits,remaninig_hits, username, password, name AS name, email, 'user' AS role
     FROM "users"
     WHERE email = :username
 ) AS combined
