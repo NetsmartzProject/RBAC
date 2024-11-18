@@ -168,3 +168,5 @@ DETAIL:  Key (admin_id)=(1) already exists.
 2024-11-14 00:02:29,301 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x00000248F19A71A0>
 2024-11-14 00:08:24,759 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x0000023FCBEBC590>
 2024-11-14 00:08:59,874 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x0000023FCBEBF7A0>
+2024-11-18 11:57:37,763 - config.log_config - INFO - User role: org
+2024-11-18 12:15:30,122 - config.log_config - INFO - User role: org
