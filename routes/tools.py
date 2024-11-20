@@ -142,7 +142,7 @@ async def create_tool(
         return result
     except Exception as e:
         print(f"Unexpected error in create_tool: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error.")
+        raise HTTPException(status_code=500, detail=str(e))
  
  
 @router.delete("/tool/{tool_id}")

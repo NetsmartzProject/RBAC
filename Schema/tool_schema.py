@@ -29,12 +29,12 @@ class Tool(BaseModel):
     description:str
    
 class ToolResponse(BaseModel):
-    tool_id: int
+    tool_id: UUID
     tool_name: str
     description: str
  
 class AddToolResponse(BaseModel):
     message: str
-    organization_id: int
-    tool_ids: List[int]
+    organization_id: UUID
+    tool_ids: List[UUID]
     tool_grant_dates: List[datetime]

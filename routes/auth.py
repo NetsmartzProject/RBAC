@@ -20,7 +20,7 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     # Query for superadmin (Admin)
     result = await db.execute(
         select(Admin).filter(
-            (Admin.admin_name == user.username) |
+            (Admin.username == user.username) |
             (Admin.email == user.username)
         )
     )
@@ -31,7 +31,7 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     else:
         # Query for organization if no superadmin found
         result = await db.execute(
-            select(Organisation).filter(Organisation.org_name == user.username)
+            select(Organisation).filter(Organisation.username == user.username)
         )
         organisation = result.scalars().first()
         if organisation:
@@ -40,7 +40,7 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
         else:
             # Query for sub-organization if no organization found
             result = await db.execute(
-                select(SubOrganisation).filter(SubOrganisation.sub_org_name == user.username)
+                select(SubOrganisation).filter(SubOrganisation.username == user.username)
             )
             suborg = result.scalars().first()
             if suborg:
@@ -97,7 +97,7 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     if not verify_password(user.password, db_user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Please Enter Correct Password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

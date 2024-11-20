@@ -70,7 +70,7 @@ class UserResponse(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
-    tool_id:Optional[int] = None
+    tool_id:Optional[UUID] = None
 
 class VerifyUser(BaseModel):
     Email:EmailStr

@@ -3,4 +3,5 @@ alembic
 env
 .env
 .venv
+web.config
 requirements.txt

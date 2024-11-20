@@ -44,28 +44,38 @@ from database.model import Organisation, ToolMaster,SubOrganisation,User
 
 async def add_tool(tool: Tool, db: AsyncSession) -> ToolResponse:
     try:
+        # Check if a tool with the same name already exists
+        result = await db.execute(select(ToolMaster).filter(ToolMaster.tool_name == tool.toolname))
+        existing_tool = result.scalar_one_or_none()  # Get the first result or None
+
+        if existing_tool:
+            # If tool already exists, raise an HTTP exception with status code 400
+            raise HTTPException(status_code=400, detail="Tool with this name already exists.")
+        
+        # Create a new tool
         new_tool = ToolMaster(
             tool_name=tool.toolname,
             description=tool.description,
             is_active=True
         )
-        print(new_tool,"this is my new Tool")
-       
- 
+        print(new_tool, "this is my new Tool")
+        
+        # Add and commit the new tool to the database
         db.add(new_tool)
         await db.commit()
         await db.refresh(new_tool)
-       
+        
+        # Return the response with the new tool details
         return ToolResponse(
             tool_id=new_tool.tool_id,
             tool_name=new_tool.tool_name,
             description=new_tool.description
         )
- 
+
     except Exception as e:
         print(e)
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to create Table: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create tool: {str(e)}")
  
 async def fetch_all_tools(db: AsyncSession) -> List[ToolResponse]:
     try:

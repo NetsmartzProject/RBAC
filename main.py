@@ -13,7 +13,7 @@ from routes.tools import router as tool_router
 from routes.edit import router as edit_router
 
 
-app = FastAPI()
+app = FastAPI(root_path="/api", docs_url="/docs", openapi_url="/openapi.json")
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,6 +28,10 @@ app.include_router(auth_router)
 app.include_router(org_router)
 app.include_router(tool_router)
 app.include_router(edit_router)
+
+if __name__=="__main__":
+    import uvicorn
+    uvicorn.run(app, port=8801)
 
 
 # FOR THE DATABASE CONNECTIVITY WITH POSTGRESS ASYNCHRONOUSLY
