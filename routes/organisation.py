@@ -161,7 +161,7 @@ async def fetch_details(
             org_id = getattr(user_info, 'org_id',None)
             org_username=getattr(user_info, 'username',None)
             org_name = getattr(user_info, 'org_name',None)
-            org_allocated_hits = getattr(user_info, 'total_hits_limit',None)
+            org_allocated_hits = getattr(user_info, 'allocated_hits',None)
             org_available_hits = getattr(user_info, 'available_hits', None)
             org_email = getattr(user_info, 'email',None)
 
