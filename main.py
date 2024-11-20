@@ -32,35 +32,3 @@ app.include_router(edit_router)
 if __name__=="__main__":
     import uvicorn
     uvicorn.run(app, port=8801)
-
-
-# FOR THE DATABASE CONNECTIVITY WITH POSTGRESS ASYNCHRONOUSLY
-
-# @app.get("/check_db/raw")
-# async def check_db_connection_raw(db: AsyncSession = Depends(get_db)):
-#     try:
-#         result = await db.execute(text("SELECT 1"))
-#         if result.scalar() == 1:
-#             return {
-#                 "status": "success",
-#                 "message": "Connected to the database!",
-#                 "method": "raw SQL",
-#             }
-#         else:
-#             return {
-#                 "status": "failure",
-#                 "message": "Database query did not return expected result",
-#                 "method": "raw SQL",
-#             }
-#     except Exception as e:
-#         print("Database connection error:", e)
-#         logger.error("Database connection error :",e)
-#         print(traceback.format_exc( ))
-#         return {
-#             "status": "failure",
-#             "message": f"Database connection failed: {str(e)}",
-#             "method": "raw SQL",
-#         }
-
-
-# END OF THE CONNECTIVITY WITH THE POSTGRESS DATABASE ASYNCHRONOUSLY

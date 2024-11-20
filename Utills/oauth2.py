@@ -99,67 +99,6 @@ def get_current_user_with_roles(roles: List[Literal["superadmin", "user", "org",
         return user
     return _get_current_user
 
-# async def get_current_user(
-#     token: str,
-#     roles: List[Literal["superadmin", "user", "org", "sub_org"]],
-#     db: AsyncSession 
-# ):
-#     credentials_exception = HTTPException(
-#         status_code=status.HTTP_401_UNAUTHORIZED,
-#         detail="Could not validate credentials",
-#         headers={"WWW-Authenticate": "Bearer"},
-#     )
-    
-#     try:
-#         payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-#         username: str = payload.get("email")
-#         if username is None:
-#             raise credentials_exception
-#     except JWTError:
-#         raise credentials_exception
-
-#     result = await db.execute(
-#         text(
-#             """
-#         SELECT id, max_hits,remaninig_hits, user_id, username, password, name, email, role
-# FROM (
-#     SELECT admin_id as id, '' as user_id, 0 as remaninig_hits , max_hits as max_hits, username AS username, password, admin_name AS name, email, 'superadmin' AS role
-#     FROM "SuperAdmin"
-#     WHERE admin_name = :username OR email = :username
-
-#     UNION
-
-#     SELECT org_id as id, '' as user_id, allocated_hits as max_hits, available_hits as remaninig_hits, username AS username, password, org_name AS name, email, 'org' AS role
-#     FROM "organisations"
-#     WHERE email = :username
-
-#     UNION
-
-#     SELECT sub_org_id as id, '' as user_id, allocated_hits as max_hits,remaining_hits as remaining_hits, username AS username, password, sub_org_name AS name, email, 'sub_org' AS role
-#     FROM "sub_organisations"
-#     WHERE email = :username
-
-#     UNION
-
-#     SELECT 0 as id, user_id, allocated_hits as max_hits,remaninig_hits, username, password, name AS name, email, 'user' AS role
-#     FROM "users"
-#     WHERE email = :username
-# ) AS combined
-
-#             """
-#         ),
-#         {"username": username}
-#     )
-#     user = result.fetchone()
-
-#     if user is None:
-#         raise credentials_exception
-
-#     if not roles or user.role in roles:
-#         return (user, user.role)
-
-#     raise HTTPException(status_code=403, detail="Access denied")
-
 async def get_current_user(
     token: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
     roles: List[Literal["superadmin", "user", "org", "sub_org"]] = None,

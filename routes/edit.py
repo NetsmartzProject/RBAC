@@ -19,39 +19,6 @@ from Utills.editprofile import update_org_info
 
 router = APIRouter()
 
-
-# @router.put("/editorganisationss")
-# async def create(
-#     org_data: OrganisationBase,
-#     db: AsyncSession = Depends(get_db),
-#     current_user: tuple = Depends(get_current_user_with_roles(["superadmin"]))
-# ):
-#     org_id = org_data.org_id  
-#     user1, role = current_user
-    
-#     if user1.role=="superadmin":
-#         print(user1.role,"jfsgsjh")
-#         print(org_id,"This is org id ")
-#     # result = await update_org_info(org_id, org_data, db)
-#     # return result
-
-
-
-# @router.put("/editorganization")
-# async def update_organization(
-#     db: AsyncSession = Depends(get_db),
-#     current_user: tuple = Depends(get_current_user_with_roles(["superadmin"]))
-# ):
-#     user1, role = current_user
-    
-#     if role != "superadmin":
-#         raise HTTPException(status_code=403, detail="Permission denied")
-
-#     result = await update_org_info(db)
-#     return result
-
-
-
 @router.put("/editorganization")
 async def update_organization(
     org_id: int,

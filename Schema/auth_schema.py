@@ -58,7 +58,7 @@ class UserCommon(BaseModel):
     password : str
     total_hits : int
     username: str  
-    # role:Role
+
 
 class UserResponse(BaseModel):
     name:str
@@ -92,8 +92,3 @@ class ForgotPassword(BaseModel):
   
     class Config:
          arbitrary_types_allowed = True
-
-        # from_attributes = True
-
-        # orm_mode=True
-    
