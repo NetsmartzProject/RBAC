@@ -195,3 +195,5 @@ DETAIL:  Key (admin_id)=(1) already exists.
 2024-11-20 15:47:20,054 - config.log_config - INFO - User role: superadmin
 2024-11-20 15:51:47,949 - config.log_config - INFO - User role: superadmin
 2024-11-20 17:40:12,411 - config.log_config - INFO - User role: superadmin
+2024-11-20 18:49:36,340 - config.log_config - INFO - Superuser 'superuser2' created successfully!
+2024-11-20 19:07:11,918 - config.log_config - INFO - User role: superadmin

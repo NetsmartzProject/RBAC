@@ -112,8 +112,8 @@ async def get_users_by_suborg(
 
 @router.post("/assign_tool_to_user")
 async def assign_tool_to_user(
-    ID: int,
-    tool_ids: list[int],
+    ID: UUID,
+    tool_ids: list[UUID],
     db: AsyncSession = Depends(get_db),
     current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "user", "org", "sub_org"]))
 ):
@@ -147,7 +147,7 @@ async def create_tool(
  
 @router.delete("/tool/{tool_id}")
 async def remove_tool(
-    tool_id: int = Path(..., description="The ID of the tool to be deleted."),
+    tool_id: UUID = Path(..., description="The ID of the tool to be deleted."),
     db: AsyncSession = Depends(get_db),
     current_user: tuple = Depends(get_current_user_with_roles(["superadmin"]))
 ) -> Any:
@@ -169,7 +169,7 @@ async def remove_tool(
  
 @router.get("/tool")
 async def get_tool_by_id(
-    tool_id: int = Query(..., description="The ID of the tool to be retrieved."),
+    tool_id: UUID = Query(..., description="The ID of the tool to be retrieved."),
     db: AsyncSession = Depends(get_db),
     current_user: tuple = Depends(get_current_user_with_roles(["superadmin"]))
 ) -> Any:

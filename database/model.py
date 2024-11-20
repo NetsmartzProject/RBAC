@@ -68,7 +68,7 @@ class Organisation(Base):
     created_by_admin = Column(
         UUID, ForeignKey("SuperAdmin.admin_id"), nullable=False
     )
-    tool_ids = Column(ARRAY(Integer), nullable=False, default=[])
+    tool_ids = Column(ARRAY(UUID), nullable=False, default=[])
     tool_grant_dates = Column(ARRAY(TIMESTAMP(timezone=True)), nullable=False, default=[])
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
@@ -97,7 +97,7 @@ class SubOrganisation(Base):
     allocated_ai_tokens = Column(Integer, nullable=True)
     remaining_ai_tokens=Column(Integer, nullable=True)
     used_ai_tokens = Column(Integer, nullable=False, default=0)
-    tool_ids = Column(ARRAY(Integer), nullable=False, default=[])
+    tool_ids = Column(ARRAY(UUID), nullable=False, default=[])
     tool_grant_dates = Column(ARRAY(TIMESTAMP(timezone=True)), nullable=False, default=[])
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
@@ -135,7 +135,7 @@ class User(Base):
     remaining_ai_tokens=Column(Integer,nullable=True,default=0)
     used_ai_tokens = Column(Integer, nullable=True,default=0)
 
-    tool_ids = Column(ARRAY(Integer), nullable=False, default=[])
+    tool_ids = Column(ARRAY(UUID), nullable=False, default=[])
     tool_grant_dates = Column(ARRAY(TIMESTAMP(timezone=True)), nullable=False, default=[])
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
