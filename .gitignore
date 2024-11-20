@@ -3,5 +3,6 @@ alembic
 env
 .env
 .venv
+logs
 web.config
 requirements.txt
