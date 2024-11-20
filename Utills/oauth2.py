@@ -1,7 +1,7 @@
 from datetime import datetime , timedelta
 from fastapi import Depends, status, HTTPException, Request
 from jose import JWTError, jwt
-from fastapi.security import OAuth2PasswordBearer, HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials, OAuth2PasswordBearer, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select
@@ -99,82 +99,127 @@ def get_current_user_with_roles(roles: List[Literal["superadmin", "user", "org",
         return user
     return _get_current_user
 
+# async def get_current_user(
+#     token: str,
+#     roles: List[Literal["superadmin", "user", "org", "sub_org"]],
+#     db: AsyncSession 
+# ):
+#     credentials_exception = HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Could not validate credentials",
+#         headers={"WWW-Authenticate": "Bearer"},
+#     )
+    
+#     try:
+#         payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+#         username: str = payload.get("email")
+#         if username is None:
+#             raise credentials_exception
+#     except JWTError:
+#         raise credentials_exception
+
+#     result = await db.execute(
+#         text(
+#             """
+#         SELECT id, max_hits,remaninig_hits, user_id, username, password, name, email, role
+# FROM (
+#     SELECT admin_id as id, '' as user_id, 0 as remaninig_hits , max_hits as max_hits, username AS username, password, admin_name AS name, email, 'superadmin' AS role
+#     FROM "SuperAdmin"
+#     WHERE admin_name = :username OR email = :username
+
+#     UNION
+
+#     SELECT org_id as id, '' as user_id, allocated_hits as max_hits, available_hits as remaninig_hits, username AS username, password, org_name AS name, email, 'org' AS role
+#     FROM "organisations"
+#     WHERE email = :username
+
+#     UNION
+
+#     SELECT sub_org_id as id, '' as user_id, allocated_hits as max_hits,remaining_hits as remaining_hits, username AS username, password, sub_org_name AS name, email, 'sub_org' AS role
+#     FROM "sub_organisations"
+#     WHERE email = :username
+
+#     UNION
+
+#     SELECT 0 as id, user_id, allocated_hits as max_hits,remaninig_hits, username, password, name AS name, email, 'user' AS role
+#     FROM "users"
+#     WHERE email = :username
+# ) AS combined
+
+#             """
+#         ),
+#         {"username": username}
+#     )
+#     user = result.fetchone()
+
+#     if user is None:
+#         raise credentials_exception
+
+#     if not roles or user.role in roles:
+#         return (user, user.role)
+
+#     raise HTTPException(status_code=403, detail="Access denied")
+
 async def get_current_user(
-    token: str,
-    roles: List[Literal["superadmin", "user", "org", "sub_org"]],
-    db: AsyncSession 
+    token: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
+    roles: List[Literal["superadmin", "user", "org", "sub_org"]] = None,
+    db: AsyncSession = Depends(get_db)
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     try:
         payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        print(payload)
         username: str = payload.get("email")
         if username is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
-    result = await db.execute(
-        text(
-            """
-        SELECT id, max_hits,remaninig_hits, user_id, username, password, name, email, role
-FROM (
-    SELECT admin_id as id, '' as user_id, 0 as remaninig_hits , max_hits as max_hits, username AS username, password, admin_name AS name, email, 'superadmin' AS role
-    FROM "SuperAdmin"
-    WHERE admin_name = :username OR email = :username
+    # Query each table for the user based on the role
+    queries = [
+        select(Admin).filter((Admin.admin_name == username) | (Admin.email == username)),
+        select(Organisation).filter(Organisation.org_name == username),
+        select(SubOrganisation).filter(SubOrganisation.sub_org_name == username),
+        select(User).filter(User.username == username),
+    ]
 
-    UNION
+    user = None
+    role = None
 
-    SELECT org_id as id, '' as user_id, total_hits_limit as max_hits, available_hits as remaninig_hits, username AS username, password, org_name AS name, email, 'org' AS role
-    FROM "organisations"
-    WHERE email = :username
+    for query, role_name in zip(queries, ["superadmin", "org", "sub_org", "user"]):
+        result = await db.execute(query)
+        user = result.scalars().first()
+        if user:
+            role = role_name
+            break
 
-    UNION
-
-    SELECT sub_org_id as id, '' as user_id, allocated_hits as max_hits,remaining_hits as remaining_hits, username AS username, password, sub_org_name AS name, email, 'sub_org' AS role
-    FROM "sub_organisations"
-    WHERE email = :username
-
-    UNION
-
-    SELECT 0 as id, user_id, allocated_hits as max_hits,remaninig_hits, username, password, name AS name, email, 'user' AS role
-    FROM "users"
-    WHERE email = :username
-) AS combined
-
-            """
-        ),
-        {"username": username}
-    )
-    user = result.fetchone()
-
-    if user is None:
+    if not user:
         raise credentials_exception
 
-    if not roles or user.role in roles:
-        return (user, user.role)
+    if roles is None or role in roles:
+        return user, role
 
     raise HTTPException(status_code=403, detail="Access denied")
 
-async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSession,parent_sub_org_name: str) -> OrganisationResponse:
+
+async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSession) -> OrganisationResponse:
     try:
         hashed_password = oauth2.hash_password(org.org_password)
         print(current_user,"user from org")
-        created_by_admin_id = current_user.id
-        
-        total_hits_limit=current_user.max_hits
-        available_hits=(org.total_hits_limit - (org.total_hits_limit * 0.10))
+        created_by_admin_id = current_user.admin_id
+        available_hits=(org.allocated_hits - (org.allocated_hits * 0.10))
         print(org, created_by_admin_id, "this is the organozation from service",org.username)
         new_org = Organisation(
         email=org.org_email,
         password=hashed_password,
         org_name=org.org_name,
         username=org.username,
-        total_hits_limit=org.total_hits_limit,
+        allocated_hits=org.allocated_hits,
         available_hits=available_hits,
         created_by_admin = created_by_admin_id
         )
@@ -186,19 +231,17 @@ async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSess
         await db.commit()
         await db.refresh(new_org)
         
-        ten_percent_of_max_hit = org.total_hits_limit * 0.10
+        ten_percent_of_max_hit = org.allocated_hits * 0.10
         
         parent_sub_org = SubOrganisation(
             org_id=new_org.org_id,
-            sub_org_name=new_org.org_name,
+            sub_org_name=f"sub_{new_org.org_name}",
             is_parent=True,
-            email=f"{org.org_email.split('@')[0]}_sub@{org.org_email.split('@')[1]}",
+            email=f"sub_{new_org.email}",
             password=hashed_password,
-            allocated_hits=ten_percent_of_max_hit,  
-            remaining_hits=0,
-            username=org.username,
-            # remaining_hits=org.available_hits,
-            used_hits=0
+            allocated_hits=ten_percent_of_max_hit,
+            available_hits=ten_percent_of_max_hit,  
+            username=f"sub_{org.username}",
         )
         
         db.add(parent_sub_org)
@@ -213,7 +256,7 @@ async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSess
             org_name=new_org.org_name,
             org_email=new_org.email,
             username=org.username,
-            total_hits_limit=org.total_hits_limit
+            allocated_hits=org.allocated_hits
     )
     
     except Exception as e:
@@ -247,8 +290,7 @@ async def suborganization(suborg: SubOrganisationBase, current_user: tuple, db: 
             username=suborg.username,
             password=hashed_password,
             allocated_hits=suborg.allocated_hits,
-            remaining_hits=suborg.allocated_hits,
-            used_hits=suborg.used_hits,
+            available_hits=suborg.allocated_hits,
             org_id=current_user.id,
             is_parent=False  
         )
@@ -303,6 +345,7 @@ async def user(userbase: UserBase, current_user: tuple, db: AsyncSession):
             password=hashed_password,
             sub_org_id=sub_org_id,
             allocated_hits=userbase.allocated_hits,
+            available_hits=userbase.allocated_hits,
             is_active=True,
             role="USER"
         )

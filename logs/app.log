@@ -170,3 +170,24 @@ DETAIL:  Key (admin_id)=(1) already exists.
 2024-11-14 00:08:59,874 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x0000023FCBEBF7A0>
 2024-11-18 11:57:37,763 - config.log_config - INFO - User role: org
 2024-11-18 12:15:30,122 - config.log_config - INFO - User role: org
+2024-11-18 12:58:54,732 - config.log_config - INFO - User role: org
+2024-11-18 13:11:39,329 - config.log_config - INFO - User role: org
+2024-11-18 13:13:49,136 - config.log_config - INFO - User role: org
+2024-11-18 15:07:57,784 - config.log_config - INFO - User role: org
+2024-11-18 15:20:33,528 - config.log_config - INFO - Connecting to SMTP server: smtp.gmail.com:587
+2024-11-18 15:20:34,327 - config.log_config - INFO - Starting TLS connection...
+2024-11-18 15:20:35,359 - config.log_config - INFO - Authenticating as: ak0590810@gmail.com
+2024-11-18 15:20:37,610 - config.log_config - INFO - Password reset email sent successfully to rahul.miglani@netsmartz.com
+2024-11-18 15:30:42,398 - config.log_config - INFO - User role: sub_org
+2024-11-18 15:35:22,647 - config.log_config - INFO - User role: org
+2024-11-18 16:24:17,815 - config.log_config - INFO - Organization updated successfully: <database.model.Organisation object at 0x000001916CFAAA50>
+2024-11-20 13:00:35,215 - config.log_config - ERROR - Error creating superuser: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.DataError'>: invalid input for query argument $1: 2 ('int' object has no attribute 'bytes')
+[SQL: INSERT INTO "SuperAdmin" (admin_id, admin_name, username, email, password, created_at, updated_at) VALUES ($1::UUID, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::TIMESTAMP WITH TIME ZONE, $7::TIMESTAMP WITHOUT TIME ZONE)]
+[parameters: (2, 'superuser2', 'Superuser_ntz1234', 'superuser2@netsmartz.net', '$2b$12$vYSy5uHHEulbnClgHt0Y3.B9ohyCyefZ/HOLHyUxRaMhwdPII6rpS', datetime.datetime(2024, 11, 20, 13, 0, 35, 60421), datetime.datetime(2024, 11, 20, 13, 0, 35, 60421))]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)
+2024-11-20 13:02:10,753 - config.log_config - INFO - Superuser 'superuser2' created successfully!
+2024-11-20 13:04:31,023 - config.log_config - INFO - User role: superadmin
+2024-11-20 13:20:16,744 - config.log_config - INFO - User role: superadmin
+2024-11-20 13:21:08,025 - config.log_config - INFO - User role: superadmin
+2024-11-20 13:42:41,481 - config.log_config - INFO - User role: superadmin
+2024-11-20 13:53:21,350 - config.log_config - INFO - User role: superadmin

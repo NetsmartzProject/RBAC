@@ -1,41 +1,35 @@
-from pydantic import BaseModel, EmailStr, Field, model_validator,field_validator,constr
 from uuid import UUID
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional,Union
-import re
-import regex
-from typing import Literal
-from database.model import Role
 
 class UserBase(BaseModel):
     name:str
     email:EmailStr
-    username: str = Field(..., pattern=r'^[a-zA-Z0-9]+$', min_length=1)  
+    username: str 
     password:str
     allocated_hits:int
     
 class SubOrganisationBase(BaseModel):
     sub_org_name:str
     sub_org_email:EmailStr
-    username: str = Field(..., pattern=r'^[a-zA-Z0-9]+$', min_length=1)  
+    username: str
     sub_org_password:str
     allocated_hits:int
-    remaining_hits:int
-    used_hits:int
     
 
 class SuborganisationResponse(BaseModel):
     sub_org_name:str
     sub_org_email:EmailStr
-    username: str = Field(..., pattern=r'^[a-zA-Z0-9]+$', min_length=1)  
+    username: str
     allocated_hits:int
-    created_by_org_id:int
+    created_by_org_id:UUID
 
 
 class EditOrganisation(BaseModel):
     org_name:str
     org_email:EmailStr
-    total_hits_limit:int
-    username: str = Field(..., pattern=r'^[a-zA-Z0-9]+$', min_length=1) 
+    allocated_hits:int
+    username: str 
     tools: List[int] = []
 
 
@@ -45,38 +39,38 @@ class OrganisationBase(BaseModel):
     org_name: str
     org_email: EmailStr
     org_password: str
-    total_hits_limit: int
-    username: str = Field(..., pattern=r'^[a-zA-Z0-9]+$', min_length=1)  
+    allocated_hits: int
+    username: str
     available_hits: Optional[int] = 0 
-    parent_sub_org_name: str | None = None
     
 
 class OrganisationResponse(BaseModel):
-    org_id: int
-    created_by_admin: int
+    org_id: UUID
+    created_by_admin: UUID
     org_name: str
     org_email: EmailStr
-    username: str = Field(..., pattern=r'^[a-zA-Z0-9]+$', min_length=1)  
-    total_hits_limit:int
+    username: str
+    allocated_hits:int
 
 class UserCommon(BaseModel):
     name : str
     email : EmailStr
     password : str
     total_hits : int
-    username: str = Field(..., pattern=r'^[a-zA-Z0-9]+$', min_length=1)  
+    username: str  
     # role:Role
 
 class UserResponse(BaseModel):
     name:str
     email : EmailStr
     allocated_hits:int
-    user_name: str = Field(..., pattern=r'^[a-zA-Z0-9]+$', min_length=1) 
-    created_by_admin: int
+    user_name: str
+    created_by_admin: UUID
 
 class UserLogin(BaseModel):
     username: str
     password: str
+    tool_id:Optional[int] = None
 
 class VerifyUser(BaseModel):
     Email:EmailStr
@@ -91,7 +85,7 @@ class CommonBase(BaseModel):
     email: EmailStr
     password: str
     allocated_hits: Optional[int] = None  
-    total_hits_limit: Optional[int] = None  
+    allocated_hits: Optional[int] = None  
        
 class ForgotPassword(BaseModel):
     email:EmailStr

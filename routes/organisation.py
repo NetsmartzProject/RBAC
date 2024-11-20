@@ -109,7 +109,8 @@ async def send_confirmation_email(email):
 
 @router.get("/fetch-details")
 async def fetch_details(
-    current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org", "user"]))
+    current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org", "user"])),
+    db: Session = Depends(get_db)
 ):
     try:
         user_info, user_role = current_user
@@ -117,60 +118,81 @@ async def fetch_details(
         logger.info(f"User role: {user_role}")
 
         if user_role == "user":
-            user_id = user_info[2]
-            user_allocated_hit = user_info[1]
-            username = user_info[3]
-            name=user_info[5]
-            user_email = user_info[6]  
+            user_id = getattr(user_info, 'user_id',None)
+            sub_org_id = getattr(user_info, 'sub_org_id',None)
+            org_id = db.query(SubOrganisation.org_id).filter(SubOrganisation.sub_org_id == sub_org_id).scalar()
+            user_allocated_hit = getattr(user_info, 'allocated_hits',None)
+            user_available_hit = getattr(user_info, 'available_hits', None)
+            username = getattr(user_info, 'username',None)
+            name=getattr(user_info, 'name',None)
+            user_email = getattr(user_info, 'email',None)
             return {
-                "user_id": user_id,
-                "user_hit": user_allocated_hit,
+                "id": user_id,
+                "allocated_hits": user_allocated_hit,
+                "available_hits": user_available_hit,
+                "sub_org_id":sub_org_id,
+                "org_id":org_id,
                 "username": username,
                 "name":name,
-                "email": user_email 
+                "email": user_email,
+                "role": user_role
             }
         elif user_role == "sub_org":
-            sub_org_id = user_info[0]
-            sub_org_name = user_info[5]
-            sub_org_username=user_info[3]
-            sub_org_email = user_info[6]
-            sub_allocated_hit=user_info[1]
+            sub_org_id = getattr(user_info, 'sub_org_id',None)
+            org_id = getattr(user_info, 'org_id',None)
+            sub_org_name = getattr(user_info, 'sub_org_name',None)
+            sub_org_username=getattr(user_info, 'username',None)
+            sub_org_email = getattr(user_info, 'email',None)
+            sub_allocated_hit=getattr(user_info, 'allocated_hits',None)
+            sub_org_available_hits = getattr(user_info, 'available_hits', None)
             return {
-                "sub_org_id": sub_org_id,
-                "sub_org_name": sub_org_name,
-                "sub_org_username":sub_org_username,
+                "id": sub_org_id,
+                "sub_org_id": None,
+                "org_id": org_id,
+                "name": sub_org_name,
+                "username":sub_org_username,
                 "email": sub_org_email,
-                "Allocated-Hit":sub_allocated_hit
+                "allocated_hits":sub_allocated_hit,
+                "available_hits":sub_org_available_hits,
+                "role": user_role
             }
 
         elif user_role == "org":
-            org_id = user_info[0]
-            org_username=user_info[3]
-            org_name = user_info[5]
-            org_hits = user_info[1]
-            org_email = user_info[6]
+            org_id = getattr(user_info, 'org_id',None)
+            org_username=getattr(user_info, 'username',None)
+            org_name = getattr(user_info, 'org_name',None)
+            org_allocated_hits = getattr(user_info, 'total_hits_limit',None)
+            org_available_hits = getattr(user_info, 'available_hits', None)
+            org_email = getattr(user_info, 'email',None)
 
             return {
-                "org_id": org_id,
-                "org_name": org_name,
-                "available_hits": org_hits,
+                "id": org_id,
+                "sub_org_id":None,
+                "org_id":None,
+                "name": org_name,
+                "allocated_hits": org_allocated_hits,
+                "available_hits": org_available_hits,
                 "email": org_email,
-                "org_username":org_username
+                "username":org_username,
+                "role": user_role
             }
 
         elif user_role == "superadmin":
-            superadmin_id = user_info[0]
-            superadmin_username=user_info[3]
-            superadmin_name = user_info[5]
-            superadmin_email = user_info[7]
-            superadmin_max_hits=user_info[1]
+            superadmin_id = getattr(user_info, 'admin_id',None)
+            superadmin_username=getattr(user_info, 'username',None)
+            superadmin_name = getattr(user_info, 'admin_name',None)
+            superadmin_email = getattr(user_info, 'email',None)
 
             return {
-                "superadmin_id": superadmin_id,
-                "superadmin_name": superadmin_name,
+                "id": superadmin_id,
+                "sub_org_id":None,
+                "org_id":None,
+                "name": superadmin_name,
                 "email": superadmin_email,
-                "Max-hit":superadmin_max_hits,
-                "superadmin_username":superadmin_username
+                "allocated_hits":None,
+                "available_hits":None,
+                "username":superadmin_username,
+                "role": user_role
             }
 
         else:
@@ -186,7 +208,6 @@ async def fetch_details(
             detail="Failed to retrieve user details. Please check the user data format."
         )
 
-
 @router.put("/editpersonalprofile")
 async def edit_profile(
     new_name: str = None,
@@ -196,7 +217,8 @@ async def edit_profile(
     current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org", "user"]))
 ):
     user_info, user_role = current_user
-    user_email = user_info[6] 
+    # user_email = user_info[6]
+    user_email = getattr(user_info, "email", None) 
 
     if user_role == "superadmin":
         model = Admin
@@ -245,38 +267,6 @@ async def edit_profile(
             "email": user.email
         }
     }
-
-        
-@router.get("/list-users")
-async def list_users(
-    db: AsyncSession = Depends(get_db),
-    current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org"]))
-):
-    try:
-        user_role = current_user        
-        if user_role == "user":
-            raise HTTPException(
-                status_code=403,
-                detail="Access forbidden for role 'user'"
-            )
-        
-        temp = await db.execute(select(User))
-        users = temp.scalars().all()
-        
-        user_list = [{"user_id":user.user_id,"username": user.username, "email": user.email,"Allocated_hits": user.allocated_hits} for user in users]
-        
-        return user_list
-
-    except HTTPException as e:
-        raise e  
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="An unexpected error occurred while retrieving the user listing."
-        )
-
-
 
 @router.post("/forgotpassword")
 async def forgot_password(

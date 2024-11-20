@@ -16,31 +16,140 @@ from Schema.tool_schema import Tool,ToolResponse
 from database.model import ToolMaster
 from database.model import Organisation, ToolMaster,SubOrganisation,User
 
-async def add_tool(org: Tool, current_user: tuple, db: AsyncSession) -> ToolResponse:
+# async def add_tool(org: Tool, current_user: tuple, db: AsyncSession) -> ToolResponse:
+#     try:
+#         new_tool = ToolMaster(
+#             tool_name=org.toolname,
+#             description=org.description,
+#             is_active=True
+#         )
+#         print(new_tool,"this is my new Tool")
+        
+ 
+#         db.add(new_tool)
+#         await db.commit()
+#         await db.refresh(new_tool)
+        
+#         return ToolResponse(
+#             tool_id=new_tool.tool_id,
+#             tool_name=new_tool.tool_name,
+#             description=new_tool.description
+#         )
+
+    
+#     except Exception as e:
+#         print(e)
+#         await db.rollback()
+#         raise HTTPException(status_code=500, detail=f"Failed to create Table: {str(e)}")
+
+async def add_tool(tool: Tool, db: AsyncSession) -> ToolResponse:
     try:
         new_tool = ToolMaster(
-            tool_name=org.toolname,
-            description=org.description,
+            tool_name=tool.toolname,
+            description=tool.description,
             is_active=True
         )
         print(new_tool,"this is my new Tool")
-        
+       
  
         db.add(new_tool)
         await db.commit()
         await db.refresh(new_tool)
-        
+       
         return ToolResponse(
             tool_id=new_tool.tool_id,
             tool_name=new_tool.tool_name,
             description=new_tool.description
         )
-
-    
+ 
     except Exception as e:
         print(e)
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to create Table: {str(e)}")
+ 
+async def fetch_all_tools(db: AsyncSession) -> List[ToolResponse]:
+    try:
+        query = select(ToolMaster).where(ToolMaster.is_active == True)
+        result = await db.execute(query)
+        tools = result.scalars().all()
+ 
+        return [
+            ToolResponse(
+                tool_id=tool.tool_id,
+                tool_name=tool.tool_name,
+                description=tool.description
+            )
+            for tool in tools
+        ]
+ 
+    except Exception as e:
+        print(f"Error fetching tools: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve tools: {str(e)}")
+ 
+async def fetch_tool_by_id(tool_id: int, db: AsyncSession) -> ToolResponse:
+    try:
+        query = select(ToolMaster).where(ToolMaster.tool_id == tool_id, ToolMaster.is_active == True)
+        result = await db.execute(query)
+        tool = result.scalar_one_or_none()
+ 
+        if not tool:
+            raise HTTPException(status_code=404, detail="Tool not found.")
+ 
+        return ToolResponse(
+            tool_id=tool.tool_id,
+            tool_name=tool.tool_name,
+            description=tool.description
+        )
+ 
+    except Exception as e:
+        print(f"Error fetching tool by ID: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve tool: {str(e)}")
+ 
+async def update_tool(tool_id: int, tool_update: Tool, db: AsyncSession) -> ToolResponse:
+    try:
+        query = select(ToolMaster).where(ToolMaster.tool_id == tool_id, ToolMaster.is_active == True)
+        result = await db.execute(query)
+        tool = result.scalar_one_or_none()
+ 
+        if not tool:
+            raise HTTPException(status_code=404, detail="Tool not found.")
+ 
+        tool.tool_name = tool_update.toolname
+        tool.description = tool_update.description
+ 
+        await db.commit()
+        await db.refresh(tool)
+ 
+        return ToolResponse(
+            tool_id=tool.tool_id,
+            tool_name=tool.tool_name,
+            description=tool.description
+        )
+ 
+    except Exception as e:
+        await db.rollback()
+        print(f"Error updating tool: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update tool: {str(e)}")
+ 
+async def delete_tool(tool_id: int, db: AsyncSession):
+    try:
+        query = select(ToolMaster).where(ToolMaster.tool_id == tool_id, ToolMaster.is_active == True)
+        result = await db.execute(query)
+        tool = result.scalar_one_or_none()
+ 
+        if not tool:
+            raise HTTPException(status_code=404, detail="Tool not found.")
+ 
+        tool.is_active = False  # Perform a soft delete
+        await db.commit()
+ 
+        return {"message": f"Tool with ID {tool_id} has been deactivated successfully."}
+ 
+    except Exception as e:
+        await db.rollback()
+        print(f"Error deleting tool: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete tool: {str(e)}")
+ 
 
 # async def assign_tools_to_suborganisation(
 #     sub_org_id: int,
