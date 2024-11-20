@@ -68,7 +68,7 @@ class UserResponse(BaseModel):
     created_by_admin: UUID
 
 class UserLogin(BaseModel):
-    username: str
+    email: str
     password: str
     tool_id:Optional[UUID] = None
 

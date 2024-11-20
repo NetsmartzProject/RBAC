@@ -20,8 +20,7 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     # Query for superadmin (Admin)
     result = await db.execute(
         select(Admin).filter(
-            (Admin.username == user.username) |
-            (Admin.email == user.username)
+            (Admin.email == user.email)
         )
     )
     superadmin = result.scalars().first()
@@ -31,7 +30,7 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     else:
         # Query for organization if no superadmin found
         result = await db.execute(
-            select(Organisation).filter(Organisation.username == user.username)
+            select(Organisation).filter(Organisation.email == user.email)
         )
         organisation = result.scalars().first()
         if organisation:
@@ -40,7 +39,7 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
         else:
             # Query for sub-organization if no organization found
             result = await db.execute(
-                select(SubOrganisation).filter(SubOrganisation.username == user.username)
+                select(SubOrganisation).filter(SubOrganisation.email == user.email)
             )
             suborg = result.scalars().first()
             if suborg:
@@ -49,7 +48,7 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
             else:
                 # Query for user if no sub-organization found
                 result = await db.execute(
-                    select(User).filter(User.username == user.username)
+                    select(User).filter(User.email == user.email)
                 )
                 user_db = result.scalars().first()
                 if user_db:
@@ -104,7 +103,7 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     # Create access token
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
     access_token = create_access_token(
-        data={"email": user.username, "role": role},
+        data={"email": user.email, "role": role},
         expires_delta=access_token_expires
     )
 

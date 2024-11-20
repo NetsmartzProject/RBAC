@@ -113,18 +113,18 @@ async def get_current_user(
     try:
         payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         print(payload)
-        username: str = payload.get("email")
-        if username is None:
+        email: str = payload.get("email")
+        if email is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
     # Query each table for the user based on the role
     queries = [
-        select(Admin).filter((Admin.admin_name == username) | (Admin.email == username)),
-        select(Organisation).filter(Organisation.org_name == username),
-        select(SubOrganisation).filter(SubOrganisation.sub_org_name == username),
-        select(User).filter(User.username == username),
+        select(Admin).filter((Admin.email == email)),
+        select(Organisation).filter(Organisation.email == email),
+        select(SubOrganisation).filter(SubOrganisation.email == email),
+        select(User).filter(User.email == email),
     ]
 
     user = None
