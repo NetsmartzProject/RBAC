@@ -311,3 +311,73 @@ async def assign_tools_to_organisation(
         "org_id": org_id,
         "tool_ids": target_org.tool_ids
     }
+
+async def assign_hits_to_organisation(target_id: int, hits: int, db: AsyncSession):
+    """Assign hits from SuperAdmin to an Organization."""
+    # Fetch the organization and superadmin
+    result = await db.execute(select(Organisation).filter(Organisation.org_id == target_id))
+    organization = result.scalar_one_or_none()
+
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    organization.allocated_hits = hits + organization.available_hits
+    organization.available_hits = organization.allocated_hits
+
+    await db.commit()
+    return {"message": f"{hits} hits successfully assigned to Organization {target_id}"}
+
+
+async def assign_hits_to_suborganisation(target_id: UUID, hits: int, db: AsyncSession):
+    """Assign hits from Organization to a SubOrganization."""
+    # Fetch the suborganization and its parent organization
+    result = await db.execute(
+        select(SubOrganisation).filter(SubOrganisation.sub_org_id == target_id))
+    
+    sub_org = result.scalar_one_or_none()
+    org_id = sub_org.org_id
+    org = await db.execute(select(Organisation).filter(Organisation.org_id == org_id))
+    organization = org.scalar_one_or_none()
+
+    if not sub_org:
+        raise HTTPException(status_code=404, detail="SubOrganization not found")
+
+    # Check if Organization has enough hits
+    if organization.available_hits < hits:
+        raise HTTPException(status_code=400, detail="Insufficient hits available for Organization")
+
+    # Deduct hits from Organization and assign to SubOrganization
+    organization.available_hits -= hits
+    sub_org.allocated_hits = hits+sub_org.available_hits
+    sub_org.available_hits = sub_org.allocated_hits
+
+    await db.commit()
+    return {"message": f"{hits} hits successfully assigned to SubOrganization {target_id}"}
+
+
+async def assign_hits_to_user(target_id: int, hits: int, db: AsyncSession):
+    """Assign hits from SubOrganization to a User."""
+    # Fetch the user and their parent SubOrganization
+    result = await db.execute(
+        select(User).filter(User.id == target_id)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    sub_org_id = user.sub_org_id
+    sub_org = await db.execute(select(SubOrganisation).filter(SubOrganisation.sub_org_id == sub_org_id))
+    sub_organization = sub_org.scalar_one_or_none()
+
+    # Check if SubOrganization has enough hits
+    if user.available_hits < hits:
+        raise HTTPException(status_code=400, detail="Insufficient hits available for SubOrganization")
+
+    # Deduct hits from SubOrganization and assign to User
+    sub_organization.available_hits -= hits
+    user.allocated_hits = hits+user.available_hits
+    user.available_hits = user.allocated_hits
+
+    await db.commit()
+    return {"message": f"{hits} hits successfully assigned to User {target_id}"}

@@ -21,3 +21,7 @@ class AddToolResponse(BaseModel):
     organization_id: UUID
     tool_ids: List[UUID]
     tool_grant_dates: List[datetime]
+
+class AssignHitsSchema(BaseModel):
+    target_user_id: UUID
+    hits: int = Field(..., gt=0, description="Number of hits to assign")

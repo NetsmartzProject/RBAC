@@ -6,8 +6,8 @@ from Utills.oauth2 import get_current_user_with_roles
 from database.database import get_db
 from typing import Any, List, Optional
 from sqlalchemy import select
-from Utills.tool import add_tool,assign_tools_to_organisation,assign_tools_to_suborganisation,assign_tools_to_user, delete_tool, fetch_all_tools, fetch_tool_by_id
-from Schema.tool_schema import Tool
+from Utills.tool import add_tool, assign_hits_to_organisation, assign_hits_to_suborganisation, assign_hits_to_user,assign_tools_to_organisation,assign_tools_to_suborganisation,assign_tools_to_user, delete_tool, fetch_all_tools, fetch_tool_by_id
+from Schema.tool_schema import AssignHitsSchema, Tool
 
 router = APIRouter()
 
@@ -204,3 +204,21 @@ async def get_all_tools(
     except Exception as e:
         print(f"Unexpected error in get_all_tools: {e}")
         raise HTTPException(status_code=500, detail="Internal server error.")
+
+@router.post("/allocate_hits")
+async def hit_allocation(
+    hit:AssignHitsSchema,
+    db: AsyncSession = Depends(get_db),
+    current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org"]))
+    ):
+    user, role = current_user
+    ID = hit.target_user_id
+    hits = hit.hits
+    if role == "superadmin":
+        return await assign_hits_to_organisation(ID, hits, db)
+    elif role == "org":
+        return await assign_hits_to_suborganisation(ID,hits,db)
+    elif role == "sub_org":
+        return await assign_hits_to_user(ID,hits,db)
+    else:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
