@@ -120,7 +120,27 @@ async def fetch_details(
         if user_role == "user":
             user_id = getattr(user_info, 'user_id',None)
             sub_org_id = getattr(user_info, 'sub_org_id',None)
-            org_id = db.query(SubOrganisation.org_id).filter(SubOrganisation.sub_org_id == sub_org_id).scalar()
+            org_id_query = await db.execute(
+                select(SubOrganisation.org_id).where(
+                    SubOrganisation.sub_org_id == sub_org_id
+                )
+            )
+            org_id = org_id_query.scalar_one_or_none()
+            org_query = await db.execute(
+                select(Organisation.org_name).where(
+                    Organisation.org_id == org_id
+                )
+            )
+            org_name = org_query.scalar_one_or_none()
+            sub_org_query = await db.execute(
+                select(SubOrganisation.sub_org_name).where(
+                    SubOrganisation.sub_org_id == sub_org_id
+                )
+            )
+            sub_org_name = sub_org_query.scalar_one_or_none()
+
+            print(org_id,"orgid")
+            # org_id = db.query(SubOrganisation.org_id).filter(SubOrganisation.sub_org_id == sub_org_id).scalar()
             user_allocated_hit = getattr(user_info, 'allocated_hits',None)
             user_available_hit = getattr(user_info, 'available_hits', None)
             username = getattr(user_info, 'username',None)
@@ -131,6 +151,8 @@ async def fetch_details(
                 "allocated_hits": user_allocated_hit,
                 "available_hits": user_available_hit,
                 "sub_org_id":sub_org_id,
+                "sub_org_name":sub_org_name,
+                "org_name":org_name,
                 "org_id":org_id,
                 "username": username,
                 "name":name,
@@ -140,6 +162,12 @@ async def fetch_details(
         elif user_role == "sub_org":
             sub_org_id = getattr(user_info, 'sub_org_id',None)
             org_id = getattr(user_info, 'org_id',None)
+            org_query = await db.execute(
+                select(Organisation.org_name).where(
+                    Organisation.org_id == org_id
+                )
+            )
+            org_name = org_query.scalar_one_or_none()
             sub_org_name = getattr(user_info, 'sub_org_name',None)
             sub_org_username=getattr(user_info, 'username',None)
             sub_org_email = getattr(user_info, 'email',None)
@@ -148,7 +176,9 @@ async def fetch_details(
             return {
                 "id": sub_org_id,
                 "sub_org_id": None,
+                "sub_org_name":None,
                 "org_id": org_id,
+                "org_name":org_name,
                 "name": sub_org_name,
                 "username":sub_org_username,
                 "email": sub_org_email,
@@ -169,6 +199,8 @@ async def fetch_details(
                 "id": org_id,
                 "sub_org_id":None,
                 "org_id":None,
+                "sub_org_name":None,
+                "org_name":None,
                 "name": org_name,
                 "allocated_hits": org_allocated_hits,
                 "available_hits": org_available_hits,
@@ -187,6 +219,8 @@ async def fetch_details(
                 "id": superadmin_id,
                 "sub_org_id":None,
                 "org_id":None,
+                "sub_org_name":None,
+                "org_name":None,
                 "name": superadmin_name,
                 "email": superadmin_email,
                 "allocated_hits":None,
