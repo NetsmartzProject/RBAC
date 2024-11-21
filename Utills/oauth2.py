@@ -150,7 +150,7 @@ async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSess
     try:
         hashed_password = oauth2.hash_password(org.org_password)
         print(current_user,"user from org")
-        created_by_admin_id = current_user.admin_id
+        created_by_admin_id = getattr(current_user, "admin_id", None)
         available_hits=(org.allocated_hits - (org.allocated_hits * 0.10))
         print(org, created_by_admin_id, "this is the organozation from service",org.username)
         new_org = Organisation(
@@ -187,8 +187,6 @@ async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSess
         await db.commit()
         await db.refresh(parent_sub_org)
 
-
-        
         return OrganisationResponse(
             org_id=new_org.org_id,
             created_by_admin=new_org.created_by_admin,
@@ -208,7 +206,7 @@ async def organization(org: OrganisationBase, current_user: tuple, db: AsyncSess
 async def suborganization(suborg: SubOrganisationBase, current_user: tuple, db: AsyncSession):
     try:
         hashed_password = oauth2.hash_password(suborg.sub_org_password)
-        org_query = select(Organisation).where(Organisation.org_id == current_user.id)
+        org_query = select(Organisation).where(Organisation.org_id == getattr(current_user, "org_id", None))
         result = await db.execute(org_query)
         org = result.scalar_one_or_none()
         if not org:
@@ -230,7 +228,7 @@ async def suborganization(suborg: SubOrganisationBase, current_user: tuple, db: 
             password=hashed_password,
             allocated_hits=suborg.allocated_hits,
             available_hits=suborg.allocated_hits,
-            org_id=current_user.id,
+            org_id=org.org_id,
             is_parent=False  
         )
         
@@ -257,7 +255,7 @@ async def suborganization(suborg: SubOrganisationBase, current_user: tuple, db: 
 async def user(userbase: UserBase, current_user: tuple, db: AsyncSession):
     try:
         hashed_password = oauth2.hash_password(userbase.password)        
-        sub_org_id = current_user.id
+        sub_org_id = getattr(current_user, "sub_org_id", None)
         print(sub_org_id,"suborgid")
         org_query = select(SubOrganisation).where(SubOrganisation.sub_org_id == sub_org_id)
         org_result = await db.execute(org_query)

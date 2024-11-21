@@ -200,3 +200,13 @@ DETAIL:  Key (admin_id)=(1) already exists.
 2024-11-20 23:16:36,519 - config.log_config - INFO - User role: org
 2024-11-20 23:18:12,321 - config.log_config - INFO - User role: org
 2024-11-20 23:18:51,227 - config.log_config - INFO - User role: org
+2024-11-21 10:59:43,070 - config.log_config - INFO - User role: superadmin
+2024-11-21 10:59:57,047 - config.log_config - INFO - User role: org
+2024-11-21 11:03:31,581 - config.log_config - INFO - User role: org
+2024-11-21 11:04:15,883 - config.log_config - INFO - User role: org
+2024-11-21 11:04:19,125 - config.log_config - INFO - User role: org
+2024-11-21 11:04:19,406 - config.log_config - INFO - User role: org
+2024-11-21 11:08:37,810 - config.log_config - INFO - User role: superadmin
+2024-11-21 11:12:03,318 - config.log_config - INFO - User role: org
+2024-11-21 11:20:49,077 - config.log_config - INFO - User role: org
+2024-11-21 11:39:11,568 - config.log_config - INFO - User role: org
