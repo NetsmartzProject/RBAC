@@ -514,17 +514,46 @@ async def assign_ai_tokens_to_user(target_id: UUID, tokens: int, db: AsyncSessio
     await db.commit()
     return {"message": f"{tokens} AI tokens successfully assigned to User {target_id}"}
 
-# async def fetch_available_hits(user_id: UUID,role:str,db: AsyncSession):
-#     if role == "user":
-#         result = await db.execute(
-#             select(User).filter(User.user_id == user_id)
-#         )
-#     elif role == "sub_org":
-#         result = await db.execute(select(SubOrganisation).filter(SubOrganisation.sub_org_id == user_id))
-#     elif role == "org":
-#         result = await db.execute(select(Organisation).filter(Organisation.org_id == user_id))
-#     elif role == "superadmin":
-#         return {"Message": "There is no hit limit for superadmin"}
-#     else:
-#         return{"Message": "Please specify the correct role"}
-    
+async def fetch_available_hits(email:str, role: str, db: AsyncSession):
+    if role == "user":
+        result = await db.execute(
+            select(User.available_hits).where(User.email == email)
+        )
+    elif role == "sub_org":
+        result = await db.execute(
+            select(SubOrganisation.available_hits).where(SubOrganisation.email == email)
+        )
+    elif role == "org":
+        result = await db.execute(
+            select(Organisation.available_hits).where(Organisation.email == email)
+        )
+    elif role == "superadmin":
+        return {"Message": "There is no hit limit for superadmin"}
+    else:
+        return {"Message": "Please specify the correct role"}
+
+    # Fetch scalar result (available_hits)
+    available_hits = result.scalar()
+    return available_hits
+
+async def fetch_remaining_ai_tokens(email:str, role: str, db: AsyncSession):
+    if role == "sub_org":
+        result = await db.execute(
+            select(SubOrganisation.remaining_ai_tokens).where(SubOrganisation.email == email)
+        )
+    elif role == "org":
+        result = await db.execute(
+            select(Organisation.remaining_ai_tokens).where(Organisation.email == email)
+        )
+    elif role == "user":
+        result = await db.execute(
+            select(User.available_hits).where(User.email == email)
+        )
+    elif role == "superadmin":
+        return {"Message": "Superadmin does not have AI token restrictions"}
+    else:
+        return {"Message": "Invalid role specified"}
+
+    # Fetch scalar result (remaining_ai_tokens)
+    remaining_ai_tokens = result.scalar()
+    return remaining_ai_tokens
