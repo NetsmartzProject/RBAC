@@ -27,8 +27,6 @@ SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
 ACCESS_TOKEN_EXPIRES_MINUTES = settings.access_token_expire_minutes
 
-
-
 def hash_password(password : str):
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password.encode('utf-8'), salt)

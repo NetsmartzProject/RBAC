@@ -92,3 +92,14 @@ class ForgotPassword(BaseModel):
   
     class Config:
          arbitrary_types_allowed = True
+
+# Define the request model for updating user details
+class UpdateUserDetailsRequest(BaseModel):
+    name: Optional[str]
+    email: Optional[EmailStr]
+    username: Optional[str]
+    allocated_hits: Optional[int]
+    available_hits: Optional[int]
+    tool_ids: Optional[List[UUID]]
+    allocated_ai_tokens: Optional[int]
+    remaining_ai_tokens: Optional[int]

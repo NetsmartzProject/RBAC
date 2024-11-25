@@ -22,6 +22,14 @@ class AddToolResponse(BaseModel):
     tool_ids: List[UUID]
     tool_grant_dates: List[datetime]
 
+class AssignToolSchema(BaseModel):
+    target_user_id: UUID
+    tools_ids: List[UUID]
+
 class AssignHitsSchema(BaseModel):
     target_user_id: UUID
     hits: int = Field(..., gt=0, description="Number of hits to assign")
+
+class AssignAiTokensSchema(BaseModel):
+    target_user_id: UUID
+    tokens: int = Field(..., gt=0, description="Number of AI tokens to assign")

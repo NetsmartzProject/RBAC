@@ -267,3 +267,12 @@ DETAIL:  Key (admin_id)=(1) already exists.
 2024-11-21 16:26:36,921 - config.log_config - INFO - User role: user
 2024-11-21 16:27:17,549 - config.log_config - INFO - User role: user
 2024-11-21 16:27:26,313 - config.log_config - INFO - User role: user
+2024-11-24 14:54:15,910 - config.log_config - INFO - Superuser 'superuser2' created successfully!
+2024-11-24 14:55:23,289 - config.log_config - INFO - Superuser 'superuser' created successfully!
+2024-11-24 14:57:45,001 - config.log_config - INFO - User role: superadmin
+2024-11-24 15:06:19,812 - config.log_config - INFO - User role: superadmin
+2024-11-24 15:12:38,600 - config.log_config - INFO - User role: org
+2024-11-24 15:14:21,276 - config.log_config - INFO - Connecting to SMTP server: smtp.gmail.com:587
+2024-11-24 15:14:22,703 - config.log_config - INFO - Starting TLS connection...
+2024-11-24 15:14:24,086 - config.log_config - INFO - Authenticating as: ak0590810@gmail.com
+2024-11-24 15:14:27,898 - config.log_config - INFO - Password reset email sent successfully to shivam.raghav@netsmartz.net

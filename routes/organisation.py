@@ -4,7 +4,9 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import smtplib
+from uuid import UUID
 from fastapi import APIRouter, Depends ,HTTPException,status
+from Schema.auth_schema import UpdateUserDetailsRequest
 from Utills.oauth2 import get_current_user_with_roles,verify_password,hash_password
 from config.log_config import logger
 from database.database import get_db
@@ -251,58 +253,64 @@ async def edit_profile(
     current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org", "user"]))
 ):
     user_info, user_role = current_user
-    # user_email = user_info[6]
-    user_email = getattr(user_info, "email", None) 
-
+    user_email = getattr(user_info, "email", None)
+    
     if user_role == "superadmin":
         model = Admin
-        username_field = "admin_name"  
+        name_field = "admin_name"
     elif user_role == "org":
         model = Organisation
-        username_field = "org_name"  
+        name_field = "org_name"
     elif user_role == "sub_org":
         model = SubOrganisation
-        username_field = "sub_org_name"  
+        name_field = "sub_org_name"
     elif user_role == "user":
         model = User
-        username_field = "username"  
+        name_field = "name"
     else:
         raise HTTPException(status_code=403, detail="Invalid role")
-
+    
+    username_field = "username"  # Assuming `username` field is consistent across roles
+    
+    # Fetch the user
     result = await db.execute(select(model).where(model.email == user_email))
     user = result.scalar_one_or_none()
-
+    
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
-
+    
+    # Update username if provided
     if new_username:
         existing_user = await db.execute(select(model).where(getattr(model, username_field) == new_username))
         if existing_user.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="This username has already been taken. Please choose another one.")
+            raise HTTPException(status_code=400, detail="This username is already taken. Please choose another one.")
         setattr(user, username_field, new_username)
-
+    
+    # Update email if provided
     if new_email:
         existing_email_user = await db.execute(select(model).where(model.email == new_email))
         if existing_email_user.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="This email has already been taken. Please choose another one.")
-        user.email = new_email
-
+            raise HTTPException(status_code=400, detail="This email is already taken. Please choose another one.")
+        setattr(user, "email", new_email)
+    
+    # Update name if provided
     if new_name:
-        user.name = new_name 
-
+        setattr(user, name_field, new_name)
+    
+    # Commit the changes
     await db.commit()
     await db.refresh(user)
-
+    
     return {
         "message": "Profile updated successfully.",
         "updated_profile": {
-            "name": user.name,
+            "name": getattr(user, name_field),
             "username": getattr(user, username_field),
-            "email": user.email
+            "email": getattr(user, "email"),
         }
     }
 
-@router.post("/forgotpassword")
+@router.post("/forgotpassword", description="Reset Own Password")
 async def forgot_password(
     email: str,
     db: AsyncSession = Depends(get_db)
@@ -343,7 +351,7 @@ async def forgot_password(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
       
-@router.post("/changepassword")
+@router.post("/changepassword", description="Change Own Password")
 async def change_password(
     email: str,
     old_password: str,
@@ -374,8 +382,224 @@ async def change_password(
         await db.commit()
 
 
-        return {"message": "Yes, it is true. Your password has been changed successfully."}
+        return {"message": "Your password has been changed successfully."}
 
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+@router.post("/deactivateUser")
+async def soft_delete(
+    user_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org"]))
+):
+    user_info, user_role = current_user
+
+    # Restrict access for the 'user' role
+    if user_role == "user":
+        raise HTTPException(status_code=403, detail="You do not have access to this route.")
+
+    # Define the deletion hierarchy
+    if user_role == "superadmin":
+        allowed_models = [Organisation, SubOrganisation, User]
+    elif user_role == "org":
+        allowed_models = [SubOrganisation, User]
+    elif user_role == "sub_org":
+        allowed_models = [User]
+    else:
+        raise HTTPException(status_code=403, detail="Invalid role for soft deletion.")
+
+    # Attempt to find and soft-delete the user/org/sub-org
+    for model in allowed_models:
+        query = select(model).where(model.id == user_id, model.is_active == True)
+        result = await db.execute(query)
+        entity = result.scalar_one_or_none()
+
+        if entity:
+            # Perform the soft delete by setting `is_active` to False
+            setattr(entity, "is_active", False)
+            await db.commit()
+            return {
+                "message": f"{model.__name__} with ID {user_id} has been soft-deleted successfully.",
+                "deleted_entity": {
+                    "id": user_id,
+                    "type": model.__name__,
+                    "is_active": entity.is_active
+                },
+            }
+
+    # If no entity is found in the allowed models
+    raise HTTPException(status_code=404, detail="Entity not found or you do not have permissions to delete it.")
+
+@router.post("/activateUser")
+async def activate_user(
+    user_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org"]))
+):
+    user_info, user_role = current_user
+
+    # Restrict access for the 'user' role
+    if user_role == "user":
+        raise HTTPException(status_code=403, detail="You do not have access to this route.")
+
+    # Define the activation hierarchy
+    if user_role == "superadmin":
+        allowed_models = [Organisation, SubOrganisation, User]
+    elif user_role == "org":
+        allowed_models = [SubOrganisation, User]
+    elif user_role == "sub_org":
+        allowed_models = [User]
+    else:
+        raise HTTPException(status_code=403, detail="Invalid role for activation.")
+
+    # Attempt to find and activate the user/org/sub-org
+    for model in allowed_models:
+        query = select(model).where(model.id == user_id, model.is_active == False)
+        result = await db.execute(query)
+        entity = result.scalar_one_or_none()
+
+        if entity:
+            # Activate the user by setting `is_active` to True
+            setattr(entity, "is_active", True)
+            await db.commit()
+            return {
+                "message": f"{model.__name__} with ID {user_id} has been activated successfully.",
+                "activated_entity": {
+                    "id": user_id,
+                    "type": model.__name__,
+                    "is_active": entity.is_active
+                },
+            }
+
+    # If no entity is found in the allowed models
+    raise HTTPException(status_code=404, detail="Entity not found or you do not have permissions to activate it.")
+
+@router.put("/updateOtherUserDetails/{entity_id}")
+async def update_user_details(
+    entity_id: UUID,
+    update_request: UpdateUserDetailsRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org"]))
+):
+    user_info, user_role = current_user
+
+    # Restrict access for the 'user' role
+    if user_role == "user":
+        raise HTTPException(status_code=403, detail="You do not have access to this route.")
+
+    # Define role-based models and hierarchy
+    models_to_update = {
+        "superadmin": [Organisation, SubOrganisation, User],
+        "org": [SubOrganisation, User],
+        "sub_org": [User],
+    }
+    allowed_models = models_to_update.get(user_role)
+
+    if not allowed_models:
+        raise HTTPException(status_code=403, detail="Invalid role for updating user details.")
+
+    # Attempt to find the entity
+    for model in allowed_models:
+        query = select(model).where(model.user_id == entity_id if model == User else model.org_id == entity_id)
+        if user_role == "org" and model in [SubOrganisation, User]:
+            # Restrict results to within the organization
+            query = query.where(model.org_id == user_info.org_id)
+        elif user_role == "sub_org" and model == User:
+            # Restrict results to within the sub-organization
+            query = query.where(model.sub_org_id == user_info.sub_org_id)
+
+        result = await db.execute(query)
+        entity = result.scalar_one_or_none()
+
+        if entity:
+            # Update fields based on request
+            if isinstance(entity, User):
+                if update_request.name:
+                    entity.name = update_request.name
+                if update_request.email:
+                    existing_email_query = select(User).where(User.email == update_request.email, User.user_id != entity_id)
+                    existing_email_result = await db.execute(existing_email_query)
+                    if existing_email_result.scalar_one_or_none():
+                        raise HTTPException(status_code=400, detail="This email is already in use.")
+                    entity.email = update_request.email
+                if update_request.username:
+                    existing_username_query = select(User).where(User.username == update_request.username, User.user_id != entity_id)
+                    existing_username_result = await db.execute(existing_username_query)
+                    if existing_username_result.scalar_one_or_none():
+                        raise HTTPException(status_code=400, detail="This username is already in use.")
+                    entity.username = update_request.username
+                if update_request.tool_ids is not None:
+                    entity.tool_ids = update_request.tool_ids
+                if update_request.allocated_hits is not None:
+                    if update_request.allocated_hits < 0:
+                        raise HTTPException(status_code=400, detail="Allocated hits cannot be negative.")
+                    entity.allocated_hits = update_request.allocated_hits
+                    entity.available_hits = update_request.allocated_hits
+                if update_request.allocated_ai_tokens is not None:
+                    if update_request.allocated_hits < 0:
+                        raise HTTPException(status_code=400, detail="Allocated hits cannot be negative.")
+                    entity.allocated_ai_tokens = update_request.allocated_ai_tokens
+                    entity.remaining_ai_tokens = update_request.allocated_ai_tokens
+
+            elif isinstance(entity, SubOrganisation):
+                if update_request.name:
+                    entity.sub_org_name = update_request.name
+                if update_request.email:
+                    existing_email_query = select(SubOrganisation).where(SubOrganisation.email == update_request.email, SubOrganisation.sub_org_id != entity_id)
+                    existing_email_result = await db.execute(existing_email_query)
+                    if existing_email_result.scalar_one_or_none():
+                        raise HTTPException(status_code=400, detail="This email is already in use.")
+                    entity.email = update_request.email
+                if update_request.username:
+                    existing_username_query = select(SubOrganisation).where(SubOrganisation.username == update_request.username, SubOrganisation.sub_org_id != entity_id)
+                    existing_username_result = await db.execute(existing_username_query)
+                    if existing_username_result.scalar_one_or_none():
+                        raise HTTPException(status_code=400, detail="This username is already in use.")
+                    entity.username = update_request.username
+                if update_request.tool_ids is not None:
+                    entity.tool_ids = update_request.tool_ids
+                if update_request.allocated_hits is not None:
+                    if update_request.allocated_hits < 0:
+                        raise HTTPException(status_code=400, detail="Allocated hits cannot be negative.")
+                    entity.allocated_hits = update_request.allocated_hits
+                    entity.available_hits = update_request.allocated_hits
+                if update_request.allocated_ai_tokens is not None:
+                    if update_request.allocated_hits < 0:
+                        raise HTTPException(status_code=400, detail="Allocated hits cannot be negative.")
+                    entity.allocated_ai_tokens = update_request.allocated_ai_tokens
+                    entity.remaining_ai_tokens = update_request.allocated_ai_tokens
+
+            elif isinstance(entity, Organisation):
+                if update_request.name:
+                    entity.org_name = update_request.name
+                if update_request.email:
+                    existing_email_query = select(Organisation).where(Organisation.email == update_request.email, Organisation.org_id != entity_id)
+                    existing_email_result = await db.execute(existing_email_query)
+                    if existing_email_result.scalar_one_or_none():
+                        raise HTTPException(status_code=400, detail="This email is already in use.")
+                    entity.email = update_request.email
+                if update_request.tool_ids is not None:
+                    entity.tool_ids = update_request.tool_ids
+                if update_request.allocated_hits is not None:
+                    if update_request.allocated_hits < 0:
+                        raise HTTPException(status_code=400, detail="Allocated hits cannot be negative.")
+                    entity.allocated_hits = update_request.allocated_hits
+                    entity.available_hits = update_request.allocated_hits
+                if update_request.allocated_ai_tokens is not None:
+                    if update_request.allocated_hits < 0:
+                        raise HTTPException(status_code=400, detail="Allocated hits cannot be negative.")
+                    entity.allocated_ai_tokens = update_request.allocated_ai_tokens
+                    entity.remaining_ai_tokens = update_request.allocated_ai_tokens
+
+            # Commit changes
+            await db.commit()
+            await db.refresh(entity)
+
+            return {
+                "message": f"{model.__name__} details updated successfully.",
+                "updated_entity": entity,
+            }
+
+    # If no entity is found
+    raise HTTPException(status_code=404, detail="Entity not found or you do not have permissions to update it.")

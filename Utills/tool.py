@@ -321,6 +321,12 @@ async def assign_hits_to_organisation(target_id: int, hits: int, db: AsyncSessio
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
+    # Ensure allocated_hits and available_hits are not None
+    if organization.allocated_hits is None:
+        organization.allocated_hits = 0
+    if organization.available_hits is None:
+        organization.available_hits = 0
+
     organization.allocated_hits = hits + organization.available_hits
     organization.available_hits = organization.allocated_hits
 
@@ -342,13 +348,23 @@ async def assign_hits_to_suborganisation(target_id: UUID, hits: int, db: AsyncSe
     if not sub_org:
         raise HTTPException(status_code=404, detail="SubOrganization not found")
 
+    # Ensure available_hits in Organization is not None
+    if organization.available_hits is None:
+        organization.available_hits = 0
+
     # Check if Organization has enough hits
     if organization.available_hits < hits:
         raise HTTPException(status_code=400, detail="Insufficient hits available for Organization")
 
+    # Ensure allocated_hits and available_hits in SubOrganization are not None
+    if sub_org.allocated_hits is None:
+        sub_org.allocated_hits = 0
+    if sub_org.available_hits is None:
+        sub_org.available_hits = 0
+
     # Deduct hits from Organization and assign to SubOrganization
     organization.available_hits -= hits
-    sub_org.allocated_hits = hits+sub_org.available_hits
+    sub_org.allocated_hits = hits + sub_org.available_hits
     sub_org.available_hits = sub_org.allocated_hits
 
     await db.commit()
@@ -370,14 +386,111 @@ async def assign_hits_to_user(target_id: int, hits: int, db: AsyncSession):
     sub_org = await db.execute(select(SubOrganisation).filter(SubOrganisation.sub_org_id == sub_org_id))
     sub_organization = sub_org.scalar_one_or_none()
 
+    # Ensure available_hits in User and SubOrganization are not None
+    if user.available_hits is None:
+        user.available_hits = 0
+    if sub_organization.available_hits is None:
+        sub_organization.available_hits = 0
+
     # Check if SubOrganization has enough hits
     if user.available_hits < hits:
         raise HTTPException(status_code=400, detail="Insufficient hits available for SubOrganization")
 
     # Deduct hits from SubOrganization and assign to User
     sub_organization.available_hits -= hits
-    user.allocated_hits = hits+user.available_hits
+    user.allocated_hits = hits + user.available_hits
     user.available_hits = user.allocated_hits
 
     await db.commit()
     return {"message": f"{hits} hits successfully assigned to User {target_id}"}
+
+async def assign_ai_tokens_to_organisation(target_id: int, tokens: int, db: AsyncSession):
+    """Assign AI tokens from SuperAdmin to an Organization."""
+    # Fetch the organization and superadmin
+    result = await db.execute(select(Organisation).filter(Organisation.org_id == target_id))
+    organization = result.scalar_one_or_none()
+
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Ensure allocated_ai_tokens and remaining_ai_tokens are not None
+    if organization.allocated_ai_tokens is None:
+        organization.allocated_ai_tokens = 0
+    if organization.remaining_ai_tokens is None:
+        organization.remaining_ai_tokens = 0
+
+    # Add tokens to the organization
+    organization.allocated_ai_tokens = tokens + organization.remaining_ai_tokens
+    organization.remaining_ai_tokens = organization.allocated_ai_tokens
+
+    await db.commit()
+    return {"message": f"{tokens} AI tokens successfully assigned to Organization {target_id}"}
+
+async def assign_ai_tokens_to_suborganisation(target_id: UUID, tokens: int, db: AsyncSession):
+    """Assign AI tokens from Organization to a SubOrganization."""
+    # Fetch the suborganization and its parent organization
+    result = await db.execute(
+        select(SubOrganisation).filter(SubOrganisation.sub_org_id == target_id))
+    
+    sub_org = result.scalar_one_or_none()
+    org_id = sub_org.org_id
+    org = await db.execute(select(Organisation).filter(Organisation.org_id == org_id))
+    organization = org.scalar_one_or_none()
+
+    if not sub_org:
+        raise HTTPException(status_code=404, detail="SubOrganization not found")
+
+    # Ensure remaining_ai_tokens in Organization is not None
+    if organization.remaining_ai_tokens is None:
+        organization.remaining_ai_tokens = 0
+
+    # Check if Organization has enough AI tokens
+    if organization.remaining_ai_tokens < tokens:
+        raise HTTPException(status_code=400, detail="Insufficient AI tokens available for Organization")
+
+    # Ensure allocated_ai_tokens and remaining_ai_tokens in SubOrganization are not None
+    if sub_org.allocated_ai_tokens is None:
+        sub_org.allocated_ai_tokens = 0
+    if sub_org.remaining_ai_tokens is None:
+        sub_org.remaining_ai_tokens = 0
+
+    # Deduct tokens from Organization and assign to SubOrganization
+    organization.remaining_ai_tokens -= tokens
+    sub_org.allocated_ai_tokens = tokens + sub_org.remaining_ai_tokens
+    sub_org.remaining_ai_tokens = sub_org.allocated_ai_tokens
+
+    await db.commit()
+    return {"message": f"{tokens} AI tokens successfully assigned to SubOrganization {target_id}"}
+
+async def assign_ai_tokens_to_user(target_id: int, tokens: int, db: AsyncSession):
+    """Assign AI tokens from SubOrganization to a User."""
+    # Fetch the user and their parent SubOrganization
+    result = await db.execute(
+        select(User).filter(User.id == target_id)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    sub_org_id = user.sub_org_id
+    sub_org = await db.execute(select(SubOrganisation).filter(SubOrganisation.sub_org_id == sub_org_id))
+    sub_organization = sub_org.scalar_one_or_none()
+
+    # Ensure remaining_ai_tokens in User and SubOrganization are not None
+    if user.remaining_ai_tokens is None:
+        user.remaining_ai_tokens = 0
+    if sub_organization.remaining_ai_tokens is None:
+        sub_organization.remaining_ai_tokens = 0
+
+    # Check if SubOrganization has enough AI tokens
+    if sub_organization.remaining_ai_tokens < tokens:
+        raise HTTPException(status_code=400, detail="Insufficient AI tokens available for SubOrganization")
+
+    # Deduct AI tokens from SubOrganization and assign to User
+    sub_organization.remaining_ai_tokens -= tokens
+    user.allocated_ai_tokens = tokens + user.remaining_ai_tokens
+    user.remaining_ai_tokens = user.allocated_ai_tokens
+
+    await db.commit()
+    return {"message": f"{tokens} AI tokens successfully assigned to User {target_id}"}
