@@ -1,15 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from database.model import Admin,Organisation,SubOrganisation, ToolMaster,User, Role
+from database.model import Admin,Organisation,SubOrganisation, ToolMaster,User
 from Utills.oauth2 import create_access_token,get_current_user_with_roles,verify_password
 from database.database import get_db
 from datetime import timedelta
-from pydantic import BaseModel
-from typing import Any, Union
-from sqlalchemy import text, select
-from sqlalchemy.orm import Session
+from typing import Any
+from sqlalchemy import select
 from config.pydantic_config import settings
-from Schema.auth_schema import VerifyUser, UserLogin,OrganisationResponse, UserCommon, OrganisationBase,SubOrganisationBase,UserBase
+from Schema.auth_schema import UserLogin, UserCommon, OrganisationBase,SubOrganisationBase,UserBase
 from Utills.oauth2 import organization,suborganization,user,check_duplicate_email,get_current_user
 
 

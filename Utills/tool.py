@@ -312,7 +312,7 @@ async def assign_tools_to_organisation(
         "tool_ids": target_org.tool_ids
     }
 
-async def assign_hits_to_organisation(target_id: int, hits: int, db: AsyncSession):
+async def assign_hits_to_organisation(target_id: UUID, hits: int, db: AsyncSession):
     """Assign hits from SuperAdmin to an Organization."""
     # Fetch the organization and superadmin
     result = await db.execute(select(Organisation).filter(Organisation.org_id == target_id))
@@ -371,7 +371,7 @@ async def assign_hits_to_suborganisation(target_id: UUID, hits: int, db: AsyncSe
     return {"message": f"{hits} hits successfully assigned to SubOrganization {target_id}"}
 
 
-async def assign_hits_to_user(target_id: int, hits: int, db: AsyncSession):
+async def assign_hits_to_user(target_id: UUID, hits: int, db: AsyncSession):
     """Assign hits from SubOrganization to a User."""
     # Fetch the user and their parent SubOrganization
     result = await db.execute(
@@ -404,7 +404,7 @@ async def assign_hits_to_user(target_id: int, hits: int, db: AsyncSession):
     await db.commit()
     return {"message": f"{hits} hits successfully assigned to User {target_id}"}
 
-async def assign_ai_tokens_to_organisation(target_id: int, tokens: int, db: AsyncSession):
+async def assign_ai_tokens_to_organisation(target_id: UUID, tokens: int, db: AsyncSession):
     """Assign AI tokens from SuperAdmin to an Organization."""
     # Fetch the organization and superadmin
     result = await db.execute(select(Organisation).filter(Organisation.org_id == target_id))
@@ -462,7 +462,7 @@ async def assign_ai_tokens_to_suborganisation(target_id: UUID, tokens: int, db: 
     await db.commit()
     return {"message": f"{tokens} AI tokens successfully assigned to SubOrganization {target_id}"}
 
-async def assign_ai_tokens_to_user(target_id: int, tokens: int, db: AsyncSession):
+async def assign_ai_tokens_to_user(target_id: UUID, tokens: int, db: AsyncSession):
     """Assign AI tokens from SubOrganization to a User."""
     # Fetch the user and their parent SubOrganization
     result = await db.execute(

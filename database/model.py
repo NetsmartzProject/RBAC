@@ -5,7 +5,6 @@ from sqlalchemy import (
     Boolean,
     ForeignKey,
     DateTime,
-    UniqueConstraint,
     CheckConstraint,
     Enum,
     ARRAY,
@@ -13,7 +12,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
-from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func

@@ -276,3 +276,5 @@ DETAIL:  Key (admin_id)=(1) already exists.
 2024-11-24 15:14:22,703 - config.log_config - INFO - Starting TLS connection...
 2024-11-24 15:14:24,086 - config.log_config - INFO - Authenticating as: ak0590810@gmail.com
 2024-11-24 15:14:27,898 - config.log_config - INFO - Password reset email sent successfully to shivam.raghav@netsmartz.net
+2024-11-25 12:50:51,142 - config.log_config - INFO - Superuser 'superuser2' created successfully!
+2024-11-25 12:54:20,916 - config.log_config - INFO - User role: superadmin
