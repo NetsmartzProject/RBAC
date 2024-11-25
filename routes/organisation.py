@@ -143,20 +143,24 @@ async def fetch_details(
             # org_id = db.query(SubOrganisation.org_id).filter(SubOrganisation.sub_org_id == sub_org_id).scalar()
             user_allocated_hit = getattr(user_info, 'allocated_hits',None)
             user_available_hit = getattr(user_info, 'available_hits', None)
+            user_allocated_ai_tokens = getattr(user_info, 'allocated_ai_tokens', None)
+            user_remaining_ai_tokens = getattr(user_info, 'remaining_ai_tokens', None)
             username = getattr(user_info, 'username',None)
             name=getattr(user_info, 'name',None)
             user_email = getattr(user_info, 'email',None)
             return {
                 "id": user_id,
-                "allocated_hits": user_allocated_hit,
-                "available_hits": user_available_hit,
+                "username": username,
+                "name": name,
+                "email": user_email,
                 "sub_org_id":sub_org_id,
                 "sub_org_name":sub_org_name,
-                "org_name":org_name,
                 "org_id":org_id,
-                "username": username,
-                "name":name,
-                "email": user_email,
+                "org_name": org_name,
+                "allocated_hits": user_allocated_hit,
+                "available_hits": user_available_hit,
+                "allocated_ai_tokens": user_allocated_ai_tokens,
+                "remaining_ai_tokens": user_remaining_ai_tokens,
                 "role": user_role
             }
         elif user_role == "sub_org":
@@ -173,6 +177,8 @@ async def fetch_details(
             sub_org_email = getattr(user_info, 'email',None)
             sub_allocated_hit=getattr(user_info, 'allocated_hits',None)
             sub_org_available_hits = getattr(user_info, 'available_hits', None)
+            sub_org_allocated_ai_tokens = getattr(user_info, 'allocated_ai_tokens', None)
+            sub_org_remaining_ai_tokens = getattr(user_info, 'remaining_ai_tokens', None)
             return {
                 "id": sub_org_id,
                 "sub_org_id": None,
@@ -184,6 +190,8 @@ async def fetch_details(
                 "email": sub_org_email,
                 "allocated_hits":sub_allocated_hit,
                 "available_hits":sub_org_available_hits,
+                "allocated_ai_tokens":sub_org_allocated_ai_tokens,
+                "remaining_ai_tokens":sub_org_remaining_ai_tokens,
                 "role": user_role
             }
 
@@ -193,6 +201,8 @@ async def fetch_details(
             org_name = getattr(user_info, 'org_name',None)
             org_allocated_hits = getattr(user_info, 'allocated_hits',None)
             org_available_hits = getattr(user_info, 'available_hits', None)
+            org_allocated_ai_tokens = getattr(user_info, 'allocated_ai_tokens', None)
+            org_remaining_ai_tokens = getattr(user_info, 'remaining_ai_tokens', None)
             org_email = getattr(user_info, 'email',None)
 
             return {
@@ -204,6 +214,8 @@ async def fetch_details(
                 "name": org_name,
                 "allocated_hits": org_allocated_hits,
                 "available_hits": org_available_hits,
+                "allocated_ai_tokens": org_allocated_ai_tokens,
+                "remaining_ai_tokens": org_remaining_ai_tokens,
                 "email": org_email,
                 "username":org_username,
                 "role": user_role
@@ -225,6 +237,8 @@ async def fetch_details(
                 "email": superadmin_email,
                 "allocated_hits":None,
                 "available_hits":None,
+                "allocated_ai_tokens": None,
+                "remaining_ai_tokens": None,
                 "username":superadmin_username,
                 "role": user_role
             }
