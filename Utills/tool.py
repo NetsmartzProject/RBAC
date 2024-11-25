@@ -88,6 +88,25 @@ async def fetch_tool_by_id(tool_id: UUID, db: AsyncSession) -> ToolResponse:
     except Exception as e:
         print(f"Error fetching tool by ID: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve tool: {str(e)}")
+
+async def fetch_tool_by_name(tool_name: str, db: AsyncSession) -> ToolResponse:
+    try:
+        query = select(ToolMaster).where(ToolMaster.tool_name == tool_name, ToolMaster.is_active == True)
+        result = await db.execute(query)
+        tool = result.scalar_one_or_none()
+ 
+        if not tool:
+            raise HTTPException(status_code=404, detail="Tool not found.")
+ 
+        return ToolResponse(
+            tool_id=tool.tool_id,
+            tool_name=tool.tool_name,
+            description=tool.description
+        )
+ 
+    except Exception as e:
+        print(f"Error fetching tool by ID: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve tool: {str(e)}")
  
 async def update_tool(tool_id: UUID, tool_update: Tool, db: AsyncSession) -> ToolResponse:
     try:

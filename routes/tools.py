@@ -6,7 +6,7 @@ from Utills.oauth2 import get_current_user_with_roles
 from database.database import get_db
 from typing import Any, List, Optional
 from sqlalchemy import select
-from Utills.tool import add_tool, assign_ai_tokens_to_organisation, assign_ai_tokens_to_suborganisation, assign_ai_tokens_to_user, assign_hits_to_organisation, assign_hits_to_suborganisation, assign_hits_to_user,assign_tools_to_organisation,assign_tools_to_suborganisation,assign_tools_to_user, delete_tool, fetch_all_tools, fetch_tool_by_id
+from Utills.tool import add_tool, assign_ai_tokens_to_organisation, assign_ai_tokens_to_suborganisation, assign_ai_tokens_to_user, assign_hits_to_organisation, assign_hits_to_suborganisation, assign_hits_to_user,assign_tools_to_organisation,assign_tools_to_suborganisation,assign_tools_to_user, delete_tool, fetch_all_tools, fetch_tool_by_id, fetch_tool_by_name
 from Schema.tool_schema import AssignAiTokensSchema, AssignHitsSchema, AssignToolSchema, Tool
 
 router = APIRouter()
@@ -189,6 +189,27 @@ async def get_tool_by_id(
         print(f"Unexpected error in get_tool_by_id: {e}")
         raise HTTPException(status_code=500, detail="Internal server error.")
  
+@router.get("/tool")
+async def get_tool_by_name(
+    tool_name: str = Query(..., description="The Name of the tool to be retrieved."),
+    db: AsyncSession = Depends(get_db),
+    current_user: tuple = Depends(get_current_user_with_roles(["superadmin"]))
+) -> Any:
+    """
+    Retrieve a tool by its ID. Only accessible to superadmin users.
+    """
+    try:
+        user, role = current_user
+        result = await fetch_tool_by_name(tool_name, db)
+        if not result:
+            raise HTTPException(status_code=404, detail="Tool not found.")
+        return {"message":result}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Unexpected error in get_tool_by_id: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error.")
+  
  
 @router.get("/tool/all")
 async def get_all_tools(
