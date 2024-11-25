@@ -271,22 +271,21 @@ async def ai_token_allocation(
     
     return {"message": result}
 
-@router.get("/available_hits")
-async def get_available_hits_for_user(
+@router.get("/available_hits_tokens")
+async def get_available_hits_ortoken_for_user(
+        type:str,
         db: AsyncSession = Depends(get_db),
         current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org", "user"]))
 ):
     user, role = current_user
     email = getattr(user, "email", None)
+    if type == "api_hits":
+        result = await fetch_available_hits(email, role, db)
+    elif type =="ai_tokens":
+        result = await fetch_remaining_ai_tokens(email, role, db)
 
-    # Fetch available hits based on role
-    available_hits = await fetch_available_hits(email, role, db)
-
-    # Return appropriate response
-    if isinstance(available_hits, dict):  # Message for certain roles
-        return available_hits
-
-    return {"available_hits": available_hits}
+        
+    return {"message": result}
 
 @router.get("/remaining_ai_tokens")
 async def get_remaining_ai_tokens_for_user(

@@ -534,7 +534,10 @@ async def fetch_available_hits(email:str, role: str, db: AsyncSession):
 
     # Fetch scalar result (available_hits)
     available_hits = result.scalar()
-    return available_hits
+    
+    return {
+        "available_hits":available_hits
+    }
 
 async def fetch_remaining_ai_tokens(email:str, role: str, db: AsyncSession):
     if role == "sub_org":
@@ -556,4 +559,7 @@ async def fetch_remaining_ai_tokens(email:str, role: str, db: AsyncSession):
 
     # Fetch scalar result (remaining_ai_tokens)
     remaining_ai_tokens = result.scalar()
-    return remaining_ai_tokens
+    
+    return {
+        "remaining_ai_tokens":remaining_ai_tokens
+    }
