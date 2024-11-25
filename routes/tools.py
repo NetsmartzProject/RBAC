@@ -6,7 +6,7 @@ from Utills.oauth2 import get_current_user_with_roles
 from database.database import get_db
 from typing import Any, List, Optional
 from sqlalchemy import select
-from Utills.tool import add_tool, assign_ai_tokens_to_organisation, assign_ai_tokens_to_suborganisation, assign_ai_tokens_to_user, assign_hits_to_organisation, assign_hits_to_suborganisation, assign_hits_to_user,assign_tools_to_organisation,assign_tools_to_suborganisation,assign_tools_to_user, delete_tool, fetch_all_tools, fetch_tool_by_id, fetch_tool_by_name
+from Utills.tool import add_tool, assign_ai_tokens_to_organisation, assign_ai_tokens_to_suborganisation, assign_ai_tokens_to_user, assign_hits_to_organisation, assign_hits_to_suborganisation, assign_hits_to_user,assign_tools_to_organisation,assign_tools_to_suborganisation,assign_tools_to_user, delete_tool, fetch_all_tools, fetch_available_hits, fetch_tool_by_id, fetch_tool_by_name
 from Schema.tool_schema import AssignAiTokensSchema, AssignHitsSchema, AssignToolSchema, Tool
 
 router = APIRouter()
@@ -267,3 +267,29 @@ async def ai_token_allocation(
         raise HTTPException(status_code=403, detail="Unauthorized access")
     
     return {"message": result}
+
+@router.get("/available_hits")
+async def get_available_hits_for_user(
+    db: AsyncSession = Depends(get_db),
+    current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org", "user"]))
+):
+    user, role = current_user
+    user_id = getattr(user, "user_id", None)
+    # Query the database for available hits for the current user
+    result = await fetch_available_hits(user_id, role)
+    available_hits = result.scalar()  # Get the scalar value (e.g., number of hits)
+    
+    return {"available_hits": available_hits}
+
+
+@router.get("/remaining_ai_tokens")
+async def get_remaining_ai_tokens_for_user(
+    db: AsyncSession = Depends(get_db),
+    current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org"]))
+):
+    user, _ = current_user
+    # Query the database for remaining AI tokens for the current user
+    result = await db.execute("SELECT ai_tokens FROM users WHERE id = :id", {"id": user.id})
+    remaining_ai_tokens = result.scalar()  # Get the scalar value (e.g., number of tokens)
+    
+    return {"remaining_ai_tokens": remaining_ai_tokens}

@@ -513,3 +513,18 @@ async def assign_ai_tokens_to_user(target_id: UUID, tokens: int, db: AsyncSessio
 
     await db.commit()
     return {"message": f"{tokens} AI tokens successfully assigned to User {target_id}"}
+
+# async def fetch_available_hits(user_id: UUID,role:str,db: AsyncSession):
+#     if role == "user":
+#         result = await db.execute(
+#             select(User).filter(User.user_id == user_id)
+#         )
+#     elif role == "sub_org":
+#         result = await db.execute(select(SubOrganisation).filter(SubOrganisation.sub_org_id == user_id))
+#     elif role == "org":
+#         result = await db.execute(select(Organisation).filter(Organisation.org_id == user_id))
+#     elif role == "superadmin":
+#         return {"Message": "There is no hit limit for superadmin"}
+#     else:
+#         return{"Message": "Please specify the correct role"}
+    
