@@ -5,4 +5,5 @@ env
 .venv
 logs
 web.config
+table_outputs
 requirements.txt

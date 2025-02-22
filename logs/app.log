@@ -280,3 +280,38 @@ DETAIL:  Key (admin_id)=(1) already exists.
 2024-11-25 12:54:20,916 - config.log_config - INFO - User role: superadmin
 2024-11-25 18:02:03,709 - config.log_config - INFO - User role: superadmin
 2024-11-25 18:11:02,015 - config.log_config - INFO - User role: org
+2024-11-25 18:56:23,017 - config.log_config - INFO - User role: superadmin
+2024-11-25 18:59:39,117 - config.log_config - INFO - User role: org
+2024-11-25 18:59:45,600 - config.log_config - INFO - User role: org
+2024-11-26 12:30:22,222 - config.log_config - INFO - User role: org
+2024-11-26 13:19:15,724 - config.log_config - INFO - User role: superadmin
+2024-11-26 13:22:42,893 - config.log_config - INFO - User role: superadmin
+2024-11-26 13:25:05,677 - config.log_config - INFO - User role: superadmin
+2024-11-26 13:55:19,994 - config.log_config - INFO - Connecting to SMTP server: mailzimb.netsmartz.net:587
+2024-11-26 13:55:20,994 - config.log_config - INFO - Starting TLS connection...
+2024-11-26 13:55:21,813 - config.log_config - INFO - Authenticating as: infobot@netsmartz.net
+2024-11-26 13:55:22,364 - config.log_config - ERROR - SMTP Authentication Error: (535, b'5.7.8 Error: authentication failed: authentication failure')
+2024-11-26 14:01:04,325 - config.log_config - INFO - Connecting to SMTP server: mailzimb.netsmartz.net:587
+2024-11-26 14:01:05,014 - config.log_config - INFO - Starting TLS connection...
+2024-11-26 14:01:05,878 - config.log_config - INFO - Authenticating...
+2024-11-26 14:01:06,626 - config.log_config - ERROR - SMTP Authentication Error: (535, b'5.7.8 Error: authentication failed: authentication failure')
+2024-11-26 14:05:04,224 - config.log_config - INFO - Connecting to SMTP server: smtp.gmail.com:587
+2024-11-26 14:05:05,034 - config.log_config - INFO - Starting TLS connection...
+2024-11-26 14:05:06,209 - config.log_config - INFO - Authenticating as: ak0590810@gmail.com
+2024-11-26 14:05:08,559 - config.log_config - INFO - Password reset email sent successfully to vickykr1703@gmail.com
+2024-11-26 14:11:05,809 - config.log_config - INFO - Connecting to SMTP server: mailzimb.netsmartz.net:587
+2024-11-26 14:11:06,923 - config.log_config - INFO - Starting TLS connection...
+2024-11-26 14:11:07,772 - config.log_config - INFO - Authenticating as: infobot@netsmartz.net
+2024-11-26 14:11:08,484 - config.log_config - ERROR - SMTP Authentication Error: (535, b'5.7.8 Error: authentication failed: authentication failure')
+2024-11-26 14:12:57,181 - config.log_config - INFO - Connecting to SMTP server: mailzimb.netsmartz.net:587
+2024-11-26 14:12:57,674 - config.log_config - INFO - Starting TLS connection...
+2024-11-26 14:12:58,367 - config.log_config - INFO - Authenticating...
+2024-11-26 14:12:58,963 - config.log_config - ERROR - SMTP Authentication Error: (535, b'5.7.8 Error: authentication failed: authentication failure')
+2024-11-26 18:01:46,672 - config.log_config - INFO - User role: superadmin
+2024-11-28 15:22:13,884 - config.log_config - INFO - User role: superadmin
+2024-11-28 15:45:14,379 - config.log_config - INFO - User role: sub_org
+2024-11-29 10:41:14,379 - config.log_config - INFO - User role: sub_org
+2024-11-29 10:53:22,545 - config.log_config - INFO - User role: sub_org
+2024-11-29 11:17:42,537 - config.log_config - INFO - User role: sub_org
+2025-02-22 01:04:02,811 - config.log_config - INFO - User role: superadmin
+2025-02-22 01:15:49,685 - config.log_config - INFO - User role: org

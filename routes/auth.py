@@ -112,11 +112,9 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
 async def read_users_me(
     current_user: tuple = Depends(get_current_user),
 ):
-    user, role = current_user  # Unpack the tuple returned by `get_current_user`
+    user, role = current_user  
     if user is not None:
-        # Access user attributes dynamically based on the role
         user_email: Any = getattr(user, "email", None)
-        # name: Any = getattr(user, "username", None) or getattr(user, "admin_name", None)
         max_hit: Any = getattr(user, "allocated_hits", None)
 
         if role == "superadmin":

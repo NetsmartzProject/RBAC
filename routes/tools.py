@@ -12,6 +12,13 @@ from Utills.tool import add_tool, assign_ai_tokens_to_organisation, assign_ai_to
     fetch_available_hits, fetch_tool_by_id, fetch_tool_by_name, fetch_remaining_ai_tokens
 from Schema.tool_schema import AssignAiTokensSchema, AssignHitsSchema, AssignToolSchema, Tool
 
+from typing import Optional
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 router = APIRouter()
 
 @router.get("/listorganizations")
@@ -44,74 +51,228 @@ async def get_organizations(
 
 @router.get("/listsuborganizations")
 async def get_suborganizations(
-    org_id: Optional[UUID] = None,
+    org_id1: Optional[UUID] = None,
     current_user: list = Depends(get_current_user_with_roles(["superadmin", "org"])),
     db: AsyncSession = Depends(get_db)
 ):
     user_info, user_role = current_user
 
-    if user_role == 'superadmin' and org_id == None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Please provide Organization Id"
-        )
+    # Base query to select all suborganizations
+    query = select(SubOrganisation)
 
-    if user_role == 'org':
+    if user_role == "superadmin":
+        if org_id1:
+            query = query.filter(SubOrganisation.org_id == org_id1)  # Optional filter if org_id is provided
+        # No further filtering needed for superadmin, they can see all suborganizations
+
+    elif user_role == "org":
         org_id = getattr(user_info, 'org_id', None)
+        if not org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Organization details not found for the current user"
+            )
+        # Org can only see suborganizations under their own org
+        query = query.filter(SubOrganisation.org_id == org_id)
 
-    # Fetch suborganizations for the specified organization
-    sub_orgs_result = await db.execute(
-        select(SubOrganisation).filter(SubOrganisation.org_id == org_id)
-    )
+    sub_orgs_result = await db.execute(query)
     sub_organizations = sub_orgs_result.scalars().all()
 
-    return {"suborganizations":[
-        {
+    if not sub_organizations:
+        return {"suborganizations": []}
+
+    sub_org_list = []
+    for sub_org in sub_organizations:
+        sub_org_data = {
             "sub_org_id": sub_org.sub_org_id,
             "sub_org_name": sub_org.sub_org_name,
-            "org_id":sub_org.org_id,
+            "org_id": sub_org.org_id,
             "email": sub_org.email,
             "allocated_hits": sub_org.allocated_hits,
             "remaining_hits": sub_org.available_hits,
         }
-        for sub_org in sub_organizations
-    ]}
+
+        sub_org_data["parent_org_id"] = sub_org.org_id
+        sub_org_list.append(sub_org_data)
+
+    return {"suborganizations": sub_org_list}
+
+# @router.get("/listsuborganizations")
+# async def get_suborganizations(
+#     org_id: Optional[UUID] = None,
+#     current_user: list = Depends(get_current_user_with_roles(["superadmin", "org"])),
+#     db: AsyncSession = Depends(get_db)
+# ):
+#     user_info, user_role = current_user
+
+#     query = select(SubOrganisation)
+
+#     if user_role == "superadmin":
+#         if org_id:
+#             query = query.filter(SubOrganisation.org_id == org_id)  # Optional filter if org_id is provided
+        
+
+#     elif user_role == "org":
+#         org_id = getattr(user_info, 'org_id', None)
+#         if not org_id:
+#             raise HTTPException(
+#                 status_code=status.HTTP_403_FORBIDDEN,
+#                 detail="Organization details not found for the current user"
+#             )
+#         # Org can only see suborganizations under their own org
+#         query = query.filter(SubOrganisation.org_id == org_id)
+#         print(query, "query")
+
+#     # Execute the query
+#     sub_orgs_result = await db.execute(query)
+#     sub_organizations = sub_orgs_result.scalars().all()
+
+#     if not sub_organizations:
+#         return {"suborganizations": []}
+
+#     # Fetch parent sub-organization IDs and parent organization IDs
+#     sub_org_response = []
+#     for sub_org in sub_organizations:
+#         # If `parent_sub_org_id` exists, fetch the parent's details
+#         if sub_org.org_id:
+#             parent_query = select(SubOrganisation).where(SubOrganisation.sub_org_id == sub_org.org_id)
+#             parent_result = await db.execute(parent_query)
+#             parent_sub_org = parent_result.scalar_one_or_none()
+#             parent_id = parent_sub_org.sub_org_id if parent_sub_org else None
+#         else:
+#             parent_id = None
+
+#         sub_org_response.append({
+#             "sub_org_id": sub_org.sub_org_id,
+#             "sub_org_name": sub_org.sub_org_name,
+#             "org_id": sub_org.org_id,
+#             "parent_sub_org_id": parent_id,
+#             "email": sub_org.email,
+#             "allocated_hits": sub_org.allocated_hits,
+#             "remaining_hits": sub_org.available_hits,
+#         })
+
+#     return {"suborganizations": sub_org_response}
+
+
+# BY SHIVAM
+# @router.get("/users")
+# async def get_users_by_suborg(
+#     sub_org_id: Optional[UUID]=None,
+#     current_user: list = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org"])),
+#     db: AsyncSession = Depends(get_db)
+# ):
+#     user_info, user_role = current_user
+
+#     if (user_role == 'superadmin' and sub_org_id is None) or (user_role == 'org' and sub_org_id is None):
+#         users_result = await db.execute(
+#         select(User).filter(User.sub_org_id == sub_org_id))
+#         users = users_result.scalars().all()
+
+#     return {"users":[
+#         {
+#             "user_id": user.user_id,
+#             "username": user.username,
+#             "name": user.name,
+#             "email": user.email,
+#             "allocated_hits": user.allocated_hits,
+#             "remaining_hits": user.available_hits,
+#             "is_active": user.is_active,
+#         }
+#         for user in users
+#     ]}
+
+
+
+#     if user_role == 'sub_org':
+#         sub_org_id = getattr(user_info, 'sub_org_id', None)
+
+#     # Fetch users for the specified suborganization
+#     users_result = await db.execute(
+#         select(User).filter(User.sub_org_id == sub_org_id)
+#     )
+#     users = users_result.scalars().all()
+
+#     return {"users":[
+#         {
+#             "user_id": user.user_id,
+#             "username": user.username,
+#             "name": user.name,
+#             "email": user.email,
+#             "allocated_hits": user.allocated_hits,
+#             "remaining_hits": user.available_hits,
+#             "is_active": user.is_active,
+#         }
+#         for user in users
+#     ]}
+# BY SHIVAM
 
 @router.get("/users")
-async def get_users_by_suborg(
-    sub_org_id: Optional[UUID],
+async def get_users(
+    sub_org_id: Optional[UUID] = None,
     current_user: list = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org"])),
     db: AsyncSession = Depends(get_db)
 ):
     user_info, user_role = current_user
 
-    if (user_role == 'superadmin' and sub_org_id is None) or (user_role == 'org' and sub_org_id is None):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Please provide Suborganization Id"
-        )
-
-    if user_role == 'sub_org':
-        sub_org_id = getattr(user_info, 'sub_org_id', None)
-
-    # Fetch users for the specified suborganization
-    users_result = await db.execute(
-        select(User).filter(User.sub_org_id == sub_org_id)
+    # Base query with joins for sub-organization and organization relationships
+    query = select(
+        User,
+        SubOrganisation.sub_org_id.label("parent_sub_org_id"),
+        Organisation.org_id.label("parent_org_id")
+    ).outerjoin(
+        SubOrganisation, User.sub_org_id == SubOrganisation.sub_org_id
+    ).outerjoin(
+        Organisation, SubOrganisation.org_id == Organisation.org_id
     )
-    users = users_result.scalars().all()
 
-    return {"users":[
-        {
-            "user_id": user.user_id,
-            "username": user.username,
-            "name": user.name,
-            "email": user.email,
-            "allocated_hits": user.allocated_hits,
-            "remaining_hits": user.available_hits,
-            "is_active": user.is_active,
-        }
-        for user in users
-    ]}
+    if sub_org_id:
+        query = query.filter(User.sub_org_id == sub_org_id)
+    elif user_role == "superadmin":
+        pass
+    elif user_role == "org":
+        org_id = getattr(user_info, 'org_id', None)
+        if not org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Organization details not found for the current user."
+            )
+        sub_orgs_result = await db.execute(
+            select(SubOrganisation.sub_org_id).filter(SubOrganisation.org_id == org_id)
+        )
+        sub_org_ids = [sub_org.sub_org_id for sub_org in sub_orgs_result]
+        query = query.filter(User.sub_org_id.in_(sub_org_ids))
+    elif user_role == "sub_org":
+        # SubOrg role sees only users under its own sub-organization
+        sub_org_id = getattr(user_info, 'sub_org_id', None)
+        if not sub_org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Sub-organization details not found for the current user."
+            )
+        query = query.filter(User.sub_org_id == sub_org_id)
+
+    # Execute the query
+    users_result = await db.execute(query)
+    results = users_result.fetchall()
+
+    return {
+        "users": [
+            {
+                "user_id": user.User.user_id,
+                "username": user.User.username,
+                "name": user.User.name,
+                "email": user.User.email,
+                "allocated_hits": user.User.allocated_hits,
+                "remaining_hits": user.User.available_hits,
+                "is_active": user.User.is_active,
+                "parent_org_id": user.parent_org_id,
+                "parent_sub_org_id": user.parent_sub_org_id,
+            }
+            for user in results
+        ]
+    }
+
 
 @router.post("/assign_tool_to_user")
 async def assign_tool_to_user(
@@ -125,9 +286,9 @@ async def assign_tool_to_user(
     if role == "superadmin":
         return await assign_tools_to_organisation(ID, tool_ids, db)
     elif role == "org":
-        return await assign_tools_to_suborganisation(ID,tool_ids,db)
+        return await assign_tools_to_suborganisation(ID,tool_ids,db,current_user)
     elif role == "sub_org":
-        return await assign_tools_to_user(ID,tool_ids,db)
+        return await assign_tools_to_user(ID,tool_ids,db,current_user)
     else:
         raise HTTPException(status_code=403, detail="Unauthorized access")
 
@@ -171,7 +332,7 @@ async def remove_tool(
         raise HTTPException(status_code=500, detail="Internal server error.")
  
  
-@router.get("/tool")
+@router.get("/gettoolbyid")
 async def get_tool_by_id(
     tool_id: UUID = Query(..., description="The ID of the tool to be retrieved."),
     db: AsyncSession = Depends(get_db),
@@ -192,7 +353,7 @@ async def get_tool_by_id(
         print(f"Unexpected error in get_tool_by_id: {e}")
         raise HTTPException(status_code=500, detail="Internal server error.")
  
-@router.get("/tool")
+@router.get("/toolname")
 async def get_tool_by_name(
     tool_name: str = Query(..., description="The Name of the tool to be retrieved."),
     db: AsyncSession = Depends(get_db),

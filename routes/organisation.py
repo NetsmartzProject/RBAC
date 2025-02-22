@@ -24,68 +24,62 @@ def generate_temp_password(length=8):
     return ''.join(random.choice(characters) for i in range(length))
 
 async def send_temp_password_email(recipient_email, temp_password):
-    """Send an email with the temporary password."""
     subject = "Temporary Password for Your Account"
     body = (
         f"Dear user,\n\n"
         f"Here is your temporary password: {temp_password}\n\n"
         "This temp password can be used for login. Please change your password after logging in to avoid any security concerns."
     )
-   
+
     msg = MIMEMultipart()
     msg['Subject'] = subject
-    msg['From'] = "ak0590810@gmail.com"  
+    msg['From'] = "infobot@netsmartz.net"
     msg['To'] = recipient_email
-    
     msg.attach(MIMEText(body, "plain"))
 
     try:
-        logger.info(f"Connecting to SMTP server: {"smtp.gmail.com"}:{587}")
-        smtp_server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
-        
-        if True:
-            logger.info("Starting TLS connection...")
-            smtp_server.starttls()
-            smtp_server.ehlo()
-        
-        logger.info(f"Authenticating as: {"ak0590810@gmail.com"}")
-        smtp_server.login("ak0590810@gmail.com", "vjgb uywp kiba gixu")
+        logger.info(f"Connecting to SMTP server: mailzimb.netsmartz.net:587")
+        smtp_server = smtplib.SMTP("mailzimb.netsmartz.net", 587, timeout=10)
+
+        # Start TLS connection
+        logger.info("Starting TLS connection...")
+        smtp_server.starttls()
+        smtp_server.ehlo()
+
+        # Login
+        logger.info("Authenticating...")
+        smtp_server.login("infobot@netsmartz.net", "Xmess$132!45")
         
         smtp_server.send_message(msg)
         smtp_server.quit()
-        
+
         logger.info(f"Password reset email sent successfully to {recipient_email}")
         return True
-        
+
     except smtplib.SMTPAuthenticationError as auth_error:
-        error_msg = f"SMTP Authentication Error: {str(auth_error)}"
-        logger.error(error_msg)
+        logger.error(f"SMTP Authentication Error: {auth_error}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Email authentication failed: {error_msg}"
+            detail=f"Email authentication failed: {auth_error}"
         )
     except smtplib.SMTPServerDisconnected as disc_error:
-        error_msg = f"SMTP Server Disconnected: {str(disc_error)}"
-        logger.error(error_msg)
+        logger.error(f"SMTP Server Disconnected: {disc_error}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Email server connection failed"
         )
     except smtplib.SMTPException as smtp_error:
-        error_msg = f"SMTP Error: {str(smtp_error)}"
-        logger.error(error_msg)
+        logger.error(f"SMTP Error: {smtp_error}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Email sending failed"
         )
-        
     except Exception as e:
-        error_msg = f"Failed to send password reset email: {str(e)}"
-    logger.error(error_msg)
-    raise HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Failed to send reset password email"
-    )
+        logger.error(f"General error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send password reset email"
+        )
 
 
 async def send_confirmation_email(email):
@@ -95,13 +89,13 @@ async def send_confirmation_email(email):
 
     msg = MIMEText(body)
     msg['Subject'] = subject
-    msg['From'] = "ak0590810@gmail.com"
+    msg['From'] = "infobot@netsmartz.net"
     msg['To'] = email
 
     try:
-        with smtplib.SMTP("smtp.example.com", 587) as server: 
+        with smtplib.SMTP("mailzimb.netsmartz.net", 587) as server: 
             server.starttls()
-            server.login("ak0590810@gmail.com", "vjgb uywp kiba gixu")  
+            server.login("infobot@netsmartz.net", "Xmess$132!45")  
             server.sendmail(email, msg.as_string())
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to send email")
@@ -140,7 +134,6 @@ async def fetch_details(
             sub_org_name = sub_org_query.scalar_one_or_none()
 
             print(org_id,"orgid")
-            # org_id = db.query(SubOrganisation.org_id).filter(SubOrganisation.sub_org_id == sub_org_id).scalar()
             user_allocated_hit = getattr(user_info, 'allocated_hits',None)
             user_available_hit = getattr(user_info, 'available_hits', None)
             user_allocated_ai_tokens = getattr(user_info, 'allocated_ai_tokens', None)
@@ -260,7 +253,6 @@ async def fetch_details(
 async def edit_profile(
     new_name: str = None,
     new_username: str = None,
-    new_email: str = None,
     db: AsyncSession = Depends(get_db),
     current_user: tuple = Depends(get_current_user_with_roles(["superadmin", "org", "sub_org", "user"]))
 ):
@@ -282,30 +274,20 @@ async def edit_profile(
     else:
         raise HTTPException(status_code=403, detail="Invalid role")
     
-    username_field = "username"  # Assuming `username` field is consistent across roles
+    username_field = "username"  
     
-    # Fetch the user
     result = await db.execute(select(model).where(model.email == user_email))
     user = result.scalar_one_or_none()
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     
-    # Update username if provided
     if new_username:
         existing_user = await db.execute(select(model).where(getattr(model, username_field) == new_username))
         if existing_user.scalar_one_or_none():
             raise HTTPException(status_code=400, detail="This username is already taken. Please choose another one.")
         setattr(user, username_field, new_username)
     
-    # Update email if provided
-    if new_email:
-        existing_email_user = await db.execute(select(model).where(model.email == new_email))
-        if existing_email_user.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="This email is already taken. Please choose another one.")
-        setattr(user, "email", new_email)
-    
-    # Update name if provided
     if new_name:
         setattr(user, name_field, new_name)
     
@@ -318,7 +300,7 @@ async def edit_profile(
         "updated_profile": {
             "name": getattr(user, name_field),
             "username": getattr(user, username_field),
-            "email": getattr(user, "email"),
+            # "email": getattr(user, "email"),
         }
     }
 
@@ -407,7 +389,6 @@ async def soft_delete(
 ):
     user_info, user_role = current_user
 
-    # Restrict access for the 'user' role
     if user_role == "user":
         raise HTTPException(status_code=403, detail="You do not have access to this route.")
 

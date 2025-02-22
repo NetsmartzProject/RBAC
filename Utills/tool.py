@@ -15,6 +15,8 @@ from typing import Literal, List
 from Schema.tool_schema import Tool,ToolResponse
 from database.model import ToolMaster
 from database.model import Organisation, ToolMaster,SubOrganisation,User
+from urllib.parse import unquote
+
 
 async def add_tool(tool: Tool, db: AsyncSession) -> ToolResponse:
     try:
@@ -89,24 +91,50 @@ async def fetch_tool_by_id(tool_id: UUID, db: AsyncSession) -> ToolResponse:
         print(f"Error fetching tool by ID: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve tool: {str(e)}")
 
+# async def fetch_tool_by_name(tool_name: str, db: AsyncSession) -> ToolResponse:
+#     try:
+#         query = select(ToolMaster).where(ToolMaster.tool_name == tool_name, ToolMaster.is_active == True)
+#         result = await db.execute(query)
+#         tool = result.scalar_one_or_none()
+ 
+#         if not tool:
+#             raise HTTPException(status_code=404, detail="Tool not found.")
+ 
+#         return ToolResponse(
+#             tool_id=tool.tool_id,
+#             tool_name=tool.tool_name,
+#             description=tool.description
+#         )
+ 
+#     except Exception as e:
+#         print(f"Error fetching tool by ID: {e}")
+#         raise HTTPException(status_code=500, detail=f"Failed to retrieve tool: {str(e)}")
+
 async def fetch_tool_by_name(tool_name: str, db: AsyncSession) -> ToolResponse:
+    """
+    Fetch tool details from the database by tool_name.
+    """
     try:
         query = select(ToolMaster).where(ToolMaster.tool_name == tool_name, ToolMaster.is_active == True)
         result = await db.execute(query)
         tool = result.scalar_one_or_none()
- 
+
         if not tool:
             raise HTTPException(status_code=404, detail="Tool not found.")
- 
+
         return ToolResponse(
             tool_id=tool.tool_id,
             tool_name=tool.tool_name,
             description=tool.description
         )
- 
+
     except Exception as e:
-        print(f"Error fetching tool by ID: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve tool: {str(e)}")
+        print(f"Error fetching tool by name: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve tool: {str(e)}"
+        )
+
  
 async def update_tool(tool_id: UUID, tool_update: Tool, db: AsyncSession) -> ToolResponse:
     try:
@@ -156,80 +184,375 @@ async def delete_tool(tool_id: UUID, db: AsyncSession):
 async def assign_tools_to_suborganisation(
     sub_org_id: UUID,
     tool_ids: list[UUID],
-    db: AsyncSession
+    db: AsyncSession,
+    current_user: Organisation
 ) -> dict:
-    tool_query = await db.execute(select(ToolMaster).filter(ToolMaster.tool_id.in_(tool_ids)))
+    if isinstance(current_user, tuple):
+        current_user = current_user[0]
+    
+    tool_query = await db.execute(
+        select(ToolMaster).filter(ToolMaster.tool_id.in_(tool_ids))
+    )
     existing_tools = tool_query.scalars().all()
     
     if len(existing_tools) != len(tool_ids):
         raise HTTPException(status_code=404, detail="One or more tools not found")
-
-    org_query = await db.execute(select(SubOrganisation).filter(SubOrganisation.sub_org_id == sub_org_id))
-    target_org = org_query.scalar()
     
-    if not target_org:
-        raise HTTPException(status_code=404, detail="Sub-organisation not found")
-
-    parent_org = await db.execute(select(Organisation).filter(Organisation.org_id == target_org.org_id))
-    parent_org = parent_org.scalar()
+    current_org_query = await db.execute(
+        select(Organisation).filter(Organisation.org_id == current_user.org_id)
+    )
+    current_org = current_org_query.scalar()
     
-    if not parent_org:
-        raise HTTPException(status_code=404, detail="Parent organisation not found")
+    if not current_org:
+        raise HTTPException(
+            status_code=404,
+            detail="Current organization does not exist"
+        )
 
-    parent_tool_ids = set(parent_org.tool_ids or [])
-
-    invalid_tools = [tool_id for tool_id in tool_ids if tool_id not in parent_tool_ids]
+    suborg_query = await db.execute(
+        select(SubOrganisation).filter(SubOrganisation.org_id == current_org.org_id)
+    )
+    child_suborgs = suborg_query.scalars().all()
+    
+    if not child_suborgs:
+        raise HTTPException(
+            status_code=403,
+            detail="Your organization has no sub-organizations to assign tools to"
+        )
+    
+    target_suborg = next((suborg for suborg in child_suborgs if suborg.sub_org_id == sub_org_id), None)
+    
+    if not target_suborg:
+        raise HTTPException(
+            status_code=403,
+            detail="Sub-organization not found or is not a child of your organization"
+        )
+    
+    org_tool_ids = set(current_org.tool_ids or [])
+    invalid_tools = [tool_id for tool_id in tool_ids if tool_id not in org_tool_ids]
     
     if invalid_tools:
-        raise HTTPException(status_code=400, detail=f"Tools {invalid_tools} are not available in the parent organisation")
-
-    existing_tool_ids = set(target_org.tool_ids or [])
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tools {invalid_tools} are not available in your organization"
+        )
+    
+    existing_tool_ids = set(target_suborg.tool_ids or [])
     new_tool_ids = [tool_id for tool_id in tool_ids if tool_id not in existing_tool_ids]
     
     if not new_tool_ids:
         return {
-            "message": "All provided tool IDs are already assigned to this sub-organisation",
+            "message": "All provided tool IDs are already assigned to this sub-organization",
             "sub_org_id": sub_org_id,
             "existing_tool_ids": list(existing_tool_ids)
         }
-
-    updated_tool_ids = list(existing_tool_ids | set(new_tool_ids))
-    updated_tool_grant_dates = (target_org.tool_grant_dates or []) + [datetime.now() for _ in new_tool_ids]
     
-    target_org.tool_ids = updated_tool_ids
-    target_org.tool_grant_dates = updated_tool_grant_dates
-
-    print("Tool IDs before commit:", target_org.tool_ids)
+    updated_tool_ids = list(existing_tool_ids | set(new_tool_ids))
+    updated_tool_grant_dates = (target_suborg.tool_grant_dates or []) + [datetime.now() for _ in new_tool_ids]
+    
+    target_suborg.tool_ids = updated_tool_ids
+    target_suborg.tool_grant_dates = updated_tool_grant_dates
+    
     await db.commit()
-    await db.refresh(target_org)
-    print("Tool IDs after commit:", target_org.tool_ids)
-
+    await db.refresh(target_suborg)
+    
     return {
         "message": "Tools assigned successfully",
         "sub_org_id": sub_org_id,
-        "tool_ids": target_org.tool_ids
+        "tool_ids": target_suborg.tool_ids
     }
-
 # WORKING FINE FOR SUBORGANISATION ON THE BASIS OF ROLE
+
+# async def assign_tools_to_user(
+#     user_id: UUID,
+#     tool_ids: list[UUID],
+#     db: AsyncSession
+# ) -> dict:
+#     tool_query = await db.execute(select(ToolMaster).filter(ToolMaster.tool_id.in_(tool_ids)))
+#     existing_tools = tool_query.scalars().all()
+    
+#     if len(existing_tools) != len(tool_ids):
+#         raise HTTPException(status_code=404, detail="One or more tools not found")
+
+#     org_query = await db.execute(select(User).filter(User.user_id == user_id))
+#     target_org = org_query.scalar()
+    
+#     if not target_org:
+#         raise HTTPException(status_code=404, detail="user not found")
+
+#     existing_tool_ids = set(target_org.tool_ids or [])
+#     new_tool_ids = [tool_id for tool_id in tool_ids if tool_id not in existing_tool_ids]
+    
+#     if not new_tool_ids:
+#         return {
+#             "message": "All provided tool IDs are already assigned to this user",
+#             "user_id": user_id,
+#             "existing_tool_ids": list(existing_tool_ids)
+#         }
+
+#     parent_org = await db.execute(select(SubOrganisation).filter(SubOrganisation.sub_org_id == target_org.sub_org_id))
+#     parent_org = parent_org.scalar()
+    
+#     if not parent_org:
+#         raise HTTPException(status_code=404, detail="Parent organisation not found")
+
+#     parent_tool_ids = set(parent_org.tool_ids or [])
+
+#     invalid_tools = [tool_id for tool_id in tool_ids if tool_id not in parent_tool_ids]
+    
+#     if invalid_tools:
+#         raise HTTPException(status_code=400, detail=f"Tools {invalid_tools} are not available in the parent sub-organisation")
+
+#     updated_tool_ids = list(existing_tool_ids | set(new_tool_ids))
+#     updated_tool_grant_dates = (target_org.tool_grant_dates or []) + [datetime.now() for _ in new_tool_ids]
+    
+#     target_org.tool_ids = updated_tool_ids
+#     target_org.tool_grant_dates = updated_tool_grant_dates
+
+#     print("Tool IDs before commit:", target_org.tool_ids)
+#     await db.commit()
+#     await db.refresh(target_org)
+#     print("Tool IDs after commit:", target_org.tool_ids)
+
+#     return {
+#         "message": "Tools assigned successfully",
+#         "user_id": user_id,
+#         "tool_ids": target_org.tool_ids
+#     }
+
+# async def assign_tools_to_user(
+#     user_id: UUID,
+#     tool_ids: list[UUID],
+#     db: AsyncSession
+# ) -> dict:
+#     # 1. Validate the provided tools exist in ToolMaster
+#     tool_query = await db.execute(select(ToolMaster).filter(ToolMaster.tool_id.in_(tool_ids)))
+#     existing_tools = tool_query.scalars().all()
+    
+#     if len(existing_tools) != len(tool_ids):
+#         raise HTTPException(status_code=404, detail="One or more tools not found")
+
+#     # 2. Validate the user exists
+#     user_query = await db.execute(select(User).filter(User.user_id == user_id))
+#     print(user_query,"user_qury")
+#     target_user = user_query.scalar()
+    
+#     if not target_user:
+#         raise HTTPException(status_code=404, detail="User not found")
+
+#     # 3. Validate the parent sub-organization of the user exists
+#     parent_sub_org_query = await db.execute(
+#         select(User).filter(User.sub_org_id == User.user_id)
+#     )
+#     parent_sub_org = parent_sub_org_query.scalar()
+    
+#     if not parent_sub_org:
+#         raise HTTPException(status_code=404, detail="You are not Parent for this User")
+    
+#     print(parent_sub_org,"parent_sub_org")
+
+#     # 4. Validate the user belongs to the parent sub-organization
+#     if target_user.sub_org_id != parent_sub_org.sub_org_id:
+#         raise HTTPException(
+#             status_code=400,
+#             detail=f"User {user_id} does not belong to the parent sub-organization {parent_sub_org.sub_org_id}"
+#         )
+
+#     # 5. Ensure tools are available in the parent sub-organization
+#     parent_tool_ids = set(parent_sub_org.tool_ids or [])
+#     invalid_tools = [tool_id for tool_id in tool_ids if tool_id not in parent_tool_ids]
+    
+#     if invalid_tools:
+#         raise HTTPException(
+#             status_code=400, 
+#             detail=f"Tools {invalid_tools} are not available in the parent sub-organization"
+#         )
+
+#     # 6. Avoid duplicate tool assignments
+#     existing_tool_ids = set(target_user.tool_ids or [])
+#     new_tool_ids = [tool_id for tool_id in tool_ids if tool_id not in existing_tool_ids]
+    
+#     if not new_tool_ids:
+#         return {
+#             "message": "All provided tool IDs are already assigned to this user",
+#             "user_id": user_id,
+#             "existing_tool_ids": list(existing_tool_ids)
+#         }
+
+#     # 7. Update the user's tool assignments and grant dates
+#     updated_tool_ids = list(existing_tool_ids | set(new_tool_ids))
+#     updated_tool_grant_dates = (target_user.tool_grant_dates or []) + [datetime.now() for _ in new_tool_ids]
+    
+#     target_user.tool_ids = updated_tool_ids
+#     target_user.tool_grant_dates = updated_tool_grant_dates
+
+#     # Debugging print statements (optional)
+#     print("Tool IDs before commit:", target_user.tool_ids)
+
+#     # 8. Commit changes to the database
+#     await db.commit()
+#     await db.refresh(target_user)
+
+#     print("Tool IDs after commit:", target_user.tool_ids)
+
+#     # 9. Return the response
+#     return {
+#         "message": "Tools assigned successfully",
+#         "user_id": user_id,
+#         "tool_ids": target_user.tool_ids
+#     }
+
+# async def assign_tools_to_user(
+#     user_id: UUID,
+#     tool_ids: list[UUID],
+#     db: AsyncSession,
+#     current_user: User  # Assuming current user info is passed
+# ) -> dict:
+#     # 1. Validate the provided tools exist in ToolMaster
+#     tool_query = await db.execute(select(ToolMaster).filter(ToolMaster.tool_id.in_(tool_ids)))
+#     existing_tools = tool_query.scalars().all()
+    
+#     if len(existing_tools) != len(tool_ids):
+#         raise HTTPException(status_code=404, detail="One or more tools not found")
+
+#     # 2. Validate the target user exists
+#     user_query = await db.execute(select(User).filter(User.user_id == user_id))
+#     target_user = user_query.scalar()
+    
+#     if not target_user:
+#         raise HTTPException(status_code=404, detail="User not found")
+
+#     # 3. Validate the current user's sub-organization exists
+#     current_sub_org_query = await db.execute(
+#         select(SubOrganisation).filter(SubOrganisation.sub_org_id == User.sub_org_id)
+#     )
+#     current_sub_org = current_sub_org_query.scalar()
+    
+#     if not current_sub_org:
+#         raise HTTPException(
+#             status_code=404,
+#             detail="Current user's sub-organization does not exist"
+#         )
+
+#     # 4. Ensure the target user belongs to the same sub-organization as the current user
+#     if target_user.sub_org_id != current_user.sub_org_id:
+#         raise HTTPException(
+#             status_code=403,
+#             detail=f"User {user_id} does not belong to your sub-organization (sub_org_id: {current_user.sub_org_id})"
+#         )
+
+#     # 5. Ensure tools are available in the current user's sub-organization
+#     parent_tool_ids = set(current_sub_org.tool_ids or [])
+#     invalid_tools = [tool_id for tool_id in tool_ids if tool_id not in parent_tool_ids]
+    
+#     if invalid_tools:
+#         raise HTTPException(
+#             status_code=400,
+#             detail=f"Tools {invalid_tools} are not available in your sub-organization"
+#         )
+
+#     # 6. Avoid duplicate tool assignments
+#     existing_tool_ids = set(target_user.tool_ids or [])
+#     new_tool_ids = [tool_id for tool_id in tool_ids if tool_id not in existing_tool_ids]
+    
+#     if not new_tool_ids:
+#         return {
+#             "message": "All provided tool IDs are already assigned to this user",
+#             "user_id": user_id,
+#             "existing_tool_ids": list(existing_tool_ids)
+#         }
+
+#     # 7. Update the user's tool assignments and grant dates
+#     updated_tool_ids = list(existing_tool_ids | set(new_tool_ids))
+#     updated_tool_grant_dates = (target_user.tool_grant_dates or []) + [datetime.now() for _ in new_tool_ids]
+    
+#     target_user.tool_ids = updated_tool_ids
+#     target_user.tool_grant_dates = updated_tool_grant_dates
+
+#     # 8. Commit changes to the database
+#     await db.commit()
+#     await db.refresh(target_user)
+
+#     # 9. Return the response
+#     return {
+#         "message": "Tools assigned successfully",
+#         "user_id": user_id,
+#         "tool_ids": target_user.tool_ids
+#     }
 
 async def assign_tools_to_user(
     user_id: UUID,
     tool_ids: list[UUID],
-    db: AsyncSession
+    db: AsyncSession,
+    current_user: User
 ) -> dict:
-    tool_query = await db.execute(select(ToolMaster).filter(ToolMaster.tool_id.in_(tool_ids)))
+    # First, unpack the current_user if it's a tuple
+    if isinstance(current_user, tuple):
+        current_user = current_user[0]  # Assuming the User object is the first element
+
+    # 1. Validate the provided tools exist in ToolMaster
+    tool_query = await db.execute(
+        select(ToolMaster).filter(ToolMaster.tool_id.in_(tool_ids))
+    )
     existing_tools = tool_query.scalars().all()
     
     if len(existing_tools) != len(tool_ids):
         raise HTTPException(status_code=404, detail="One or more tools not found")
-
-    org_query = await db.execute(select(User).filter(User.user_id == user_id))
-    target_org = org_query.scalar()
     
-    if not target_org:
-        raise HTTPException(status_code=404, detail="user not found")
-
-    existing_tool_ids = set(target_org.tool_ids or [])
+    # 2. Validate the target user exists
+    user_query = await db.execute(select(User).filter(User.user_id == user_id))
+    target_user = user_query.scalar()
+    
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # 3. Get current user's sub-organization
+    current_sub_org_query = await db.execute(
+        select(SubOrganisation).filter(SubOrganisation.sub_org_id == current_user.sub_org_id)
+    )
+    current_sub_org = current_sub_org_query.scalar()
+    
+    if not current_sub_org:
+        raise HTTPException(
+            status_code=404,
+            detail="Current user's sub-organization does not exist"
+        )
+    
+    # 4. Get target user's sub-organization
+    target_sub_org_query = await db.execute(
+        select(SubOrganisation).filter(SubOrganisation.sub_org_id == target_user.sub_org_id)
+    )
+    target_sub_org = target_sub_org_query.scalar()
+    
+    if not target_sub_org:
+        raise HTTPException(
+            status_code=404,
+            detail="Target user's sub-organization does not exist"
+        )
+    
+    # 5. Check permissions based on sub-organization relationship
+    # Can assign tools if:
+    # a) Current user's sub-org is parent (is_parent=True) AND both sub-orgs belong to same org
+    # b) Both users are in the same sub-org
+    
+    if current_sub_org.sub_org_id != target_sub_org.sub_org_id:
+        # Different sub-orgs - check if current user's sub-org is parent
+        if not current_sub_org.is_parent or current_sub_org.org_id != target_sub_org.org_id:
+            raise HTTPException(
+                status_code=403,
+                detail="You don't have permission to assign tools to this user. Must be in same sub-org or be in parent sub-org."
+            )
+    
+    parent_tool_ids = set(current_sub_org.tool_ids or [])
+    invalid_tools = [tool_id for tool_id in tool_ids if tool_id not in parent_tool_ids]
+    
+    if invalid_tools:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tools {invalid_tools} are not available in your sub-organization"
+        )
+    
+    existing_tool_ids = set(target_user.tool_ids or [])
     new_tool_ids = [tool_id for tool_id in tool_ids if tool_id not in existing_tool_ids]
     
     if not new_tool_ids:
@@ -238,37 +561,24 @@ async def assign_tools_to_user(
             "user_id": user_id,
             "existing_tool_ids": list(existing_tool_ids)
         }
-
-    parent_org = await db.execute(select(SubOrganisation).filter(SubOrganisation.sub_org_id == target_org.sub_org_id))
-    parent_org = parent_org.scalar()
     
-    if not parent_org:
-        raise HTTPException(status_code=404, detail="Parent organisation not found")
-
-    parent_tool_ids = set(parent_org.tool_ids or [])
-
-    invalid_tools = [tool_id for tool_id in tool_ids if tool_id not in parent_tool_ids]
-    
-    if invalid_tools:
-        raise HTTPException(status_code=400, detail=f"Tools {invalid_tools} are not available in the parent sub-organisation")
-
+    # 8. Update the user's tool assignments and grant dates
     updated_tool_ids = list(existing_tool_ids | set(new_tool_ids))
-    updated_tool_grant_dates = (target_org.tool_grant_dates or []) + [datetime.now() for _ in new_tool_ids]
+    updated_tool_grant_dates = (target_user.tool_grant_dates or []) + [datetime.now() for _ in new_tool_ids]
     
-    target_org.tool_ids = updated_tool_ids
-    target_org.tool_grant_dates = updated_tool_grant_dates
-
-    print("Tool IDs before commit:", target_org.tool_ids)
+    target_user.tool_ids = updated_tool_ids
+    target_user.tool_grant_dates = updated_tool_grant_dates
+    
+    # 9. Commit changes to the database
     await db.commit()
-    await db.refresh(target_org)
-    print("Tool IDs after commit:", target_org.tool_ids)
-
+    await db.refresh(target_user)
+    
+    # 10. Return the response
     return {
         "message": "Tools assigned successfully",
         "user_id": user_id,
-        "tool_ids": target_org.tool_ids
+        "tool_ids": target_user.tool_ids
     }
-
 async def assign_tools_to_organisation(
     org_id: UUID,
     tool_ids: list[UUID],
