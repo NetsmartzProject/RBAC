@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.log_config import logger
 from Utills import oauth2
@@ -8,17 +9,16 @@ from datetime import datetime
 
 
 async def create_superuser(
-   admin_id:str ,admin_name: str, email: str, password: str, max_hits: int, db: AsyncSession
+    admin_name: str, username:str, email: str, password: str, db: AsyncSession
 ):
     try:
         async with db.begin():
             hashed_password = oauth2.hash_password(password)
             new_superuser = model.Admin(
-                admin_id=admin_id,
                 admin_name=admin_name,
+                username=username,
                 email=email,
                 password=hashed_password,
-                max_hits=max_hits,
                 created_at=datetime.now(),
                 updated_at=datetime.now()
             )
@@ -33,14 +33,13 @@ async def create_superuser(
 
 
 async def main():
-    admin_id=settings.admin_id
     admin_name = settings.superuser_username
     email = settings.superuser_email
     password = settings.superuser_password
-    max_hits = settings.max_hits
+    username= settings.db_username
 
     async for db in database.get_db():
-        await create_superuser(admin_id,admin_name, email, password, max_hits, db)
+        await create_superuser(admin_name,username, email, password, db)
 
 
 if __name__ == "__main__":

@@ -1,88 +1,105 @@
-from pydantic import BaseModel, EmailStr, Field, model_validator,field_validator
 from uuid import UUID
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional,Union
-import re
-from typing import Literal
-from database.model import Role
 
 class UserBase(BaseModel):
-    username:str
+    name:str
     email:EmailStr
+    username: str 
     password:str
     allocated_hits:int
     
 class SubOrganisationBase(BaseModel):
     sub_org_name:str
     sub_org_email:EmailStr
+    username: str
     sub_org_password:str
     allocated_hits:int
-    remaining_hits:int
-    used_hits:int
     
 
 class SuborganisationResponse(BaseModel):
     sub_org_name:str
     sub_org_email:EmailStr
+    username: str
     allocated_hits:int
-    created_by_org_id:int
+    created_by_org_id:UUID
 
 
+class EditOrganisation(BaseModel):
+    org_name:str
+    org_email:EmailStr
+    allocated_hits:int
+    username: str 
+    tools: List[int] = []
+
+
+# Remaining are tools in EditOrganisation 
     
 class OrganisationBase(BaseModel):
     org_name: str
     org_email: EmailStr
     org_password: str
-    total_hits_limit: int
+    allocated_hits: int
+    username: str
     available_hits: Optional[int] = 0 
-    parent_sub_org_name: str | None = None
     
 
 class OrganisationResponse(BaseModel):
-    org_id: int
-    created_by_admin: int
+    org_id: UUID
+    created_by_admin: UUID
     org_name: str
     org_email: EmailStr
+    username: str
+    allocated_hits:int
 
 class UserCommon(BaseModel):
     name : str
     email : EmailStr
     password : str
     total_hits : int
-    role:Role
+    username: str  
+
 
 class UserResponse(BaseModel):
     name:str
     email : EmailStr
     allocated_hits:int
-
-
-
-    
-    
+    user_name: str
+    created_by_admin: UUID
 
 class UserLogin(BaseModel):
-    username: str
+    email: str
     password: str
+    tool_id:Optional[UUID] = None
 
 class VerifyUser(BaseModel):
     Email:EmailStr
-    Role:str
+    Role:str 
+    
 class ResponseData(BaseModel):
     status: str
     data: Union[OrganisationBase, SubOrganisationBase, UserBase]
-
 
 class CommonBase(BaseModel):
     name: str 
     email: EmailStr
     password: str
     allocated_hits: Optional[int] = None  
-    total_hits_limit: Optional[int] = None  
-    
+    allocated_hits: Optional[int] = None  
+       
+class ForgotPassword(BaseModel):
+    email:EmailStr
+  
     class Config:
          arbitrary_types_allowed = True
 
-        # from_attributes = True
-
-        # orm_mode=True
-    
+# Define the request model for updating user details
+class UpdateUserDetailsRequest(BaseModel):
+    name: Optional[str]
+    email: Optional[EmailStr]
+    username: Optional[str]
+    allocated_hits: Optional[int]
+    available_hits: Optional[int]
+    tool_ids: Optional[List[UUID]]
+    allocated_ai_tokens: Optional[int]
+    remaining_ai_tokens: Optional[int]

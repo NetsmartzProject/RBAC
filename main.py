@@ -1,17 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database.database import get_db
-import traceback
-from sqlalchemy import text, select
-from sqlalchemy.orm import Session
-from config.log_config import logger
-from Utills.oauth2 import verify_password
 from routes.auth import router as auth_router
 from routes.organisation import router as org_router
+from routes.tools import router as tool_router
 
-
-app = FastAPI()
+app = FastAPI(root_path="/api", docs_url="/docs", openapi_url="/openapi.json")
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,35 +17,8 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(org_router)
+app.include_router(tool_router)
 
-
-# FOR THE DATABASE CONNECTIVITY WITH POSTGRESS ASYNCHRONOUSLY
-
-# @app.get("/check_db/raw")
-# async def check_db_connection_raw(db: AsyncSession = Depends(get_db)):
-#     try:
-#         result = await db.execute(text("SELECT 1"))
-#         if result.scalar() == 1:
-#             return {
-#                 "status": "success",
-#                 "message": "Connected to the database!",
-#                 "method": "raw SQL",
-#             }
-#         else:
-#             return {
-#                 "status": "failure",
-#                 "message": "Database query did not return expected result",
-#                 "method": "raw SQL",
-#             }
-#     except Exception as e:
-#         print("Database connection error:", e)
-#         logger.error("Database connection error :",e)
-#         print(traceback.format_exc( ))
-#         return {
-#             "status": "failure",
-#             "message": f"Database connection failed: {str(e)}",
-#             "method": "raw SQL",
-#         }
-
-
-# END OF THE CONNECTIVITY WITH THE POSTGRESS DATABASE ASYNCHRONOUSLY
+if __name__=="__main__":
+    import uvicorn
+    uvicorn.run(app, port=8801)
